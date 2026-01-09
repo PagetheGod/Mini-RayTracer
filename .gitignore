@@ -1,0 +1,10 @@
+#Binaries
+Binaries/
+Output/
+#Visual studio
+*.sln
+*.vcxproj
+*.filters
+*.user
+#ppm Output
+*.ppm
