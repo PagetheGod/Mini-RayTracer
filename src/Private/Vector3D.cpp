@@ -64,6 +64,11 @@ Vector3D Vector3D::Normalize() const
 	return Vector3D(X / Length, Y / Length, Z / Length);
 }
 
+std::ostream& operator<<(std::ostream& OutFileStream, const Vector3D& Vector)
+{
+	return OutFileStream << Vector.X << ' ' << Vector.Y << ' ' << Vector.Z;
+}
+
 //Global-scope, non-member definitions
 Vector3D operator+(const Vector3D& Lhs, const Vector3D& Rhs)
 {
@@ -89,4 +94,9 @@ Vector3D operator*(float Scalar, const Vector3D& Vector)
 Vector3D operator*(const Vector3D& Vector, float Scalar)
 {
 	return Vector3D(Vector.X * Scalar, Vector.Y * Scalar, Vector.Z * Scalar);
+}
+
+Vector3D operator/(const Vector3D& Vector, float Scalar)
+{
+	return Vector3D(Vector.X / Scalar, Vector.Y / Scalar, Vector.Z / Scalar);
 }

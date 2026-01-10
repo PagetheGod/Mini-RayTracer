@@ -5,7 +5,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 {
 	bool Result;
 	Application App = Application();
-	Result = App.Initialize(hInstance, nCmdShow, 256, 256);
+	Result = App.Initialize(hInstance, nCmdShow, 1920, 1080);
 	if (!Result)
 	{
 		return -1;

@@ -1,18 +1,22 @@
 #pragma once
-
-
-
-using Point3D = Vector3D;
+#include <iostream>
 
 class Vector3D
 {
 public:
 	Vector3D(float InX = 0.0, float InY = 0.0, float InZ = 0.0);
 
-	//Getters
+	//Getters - for point
 	float GetX() const { return X; }
 	float GetY() const { return Y; }
 	float GetZ() const { return Z; }
+	//Getters - for color
+	float R() const { return X; }
+	float G() const { return Y; }
+	float B() const { return Z; }
+
+
+
 
 	//Class-scope operator overloads
 	Vector3D operator-();
@@ -34,9 +38,13 @@ public:
 	float Z;
 };
 
+using Point3D = Vector3D;
+
 //Global-scope vector operator overloads
+std::ostream& operator<<(std::ostream& OutFileStream, const Vector3D& Vector);
 Vector3D operator+(const Vector3D& Lhs, const Vector3D& Rhs);
 Vector3D operator-(const Vector3D& Lhs, const Vector3D& Rhs);
 Vector3D operator*(const Vector3D& Lhs, const Vector3D& Rhs);
 Vector3D operator*(float Scalar, const Vector3D& Vector);
 Vector3D operator*(const Vector3D& Vector, float Scalar);
+Vector3D operator/(const Vector3D& Vector, float Scalar);

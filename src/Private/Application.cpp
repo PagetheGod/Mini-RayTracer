@@ -48,7 +48,8 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 		return false;
 	}
 
-	m_Renderer = new SoftwareRenderer(Width, Height);
+	//For software rendering, especially for a ppm output, we only need to pass the width
+	m_Renderer = new SoftwareRenderer(Width);
 	bool Result = m_Renderer->Initialize("output.ppm");
 	if (!Result)
 	{
