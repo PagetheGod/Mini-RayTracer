@@ -11,7 +11,7 @@ SoftwareRenderer::SoftwareRenderer(int Width) : m_Width(Width), m_OutFileStream(
 	m_ViewportWidth = 2.f;
 	m_ViewportHeight = m_ViewportWidth / ((float)m_Width / (float)m_Height);
 }
-bool SoftwareRenderer::Initialize(const char* OutFileName)
+bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 {
 	m_OutFileStream.open(OutFileName, std::ios::out | std::ios::binary);
 	if (!m_OutFileStream.is_open())
@@ -19,6 +19,8 @@ bool SoftwareRenderer::Initialize(const char* OutFileName)
 		MessageBox(NULL, L"Failed to open the file!", L"Error", MB_OK);
 		return false;
 	}
+	
+	m_hWnd = hWnd;
 
 	//Initialize camera parameters and delta U,V
 	//The camera center is also the origin of our coordinate system

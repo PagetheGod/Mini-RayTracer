@@ -50,7 +50,7 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 
 	//For software rendering, especially for a ppm output, we only need to pass the width
 	m_Renderer = new SoftwareRenderer(Width);
-	bool Result = m_Renderer->Initialize("output.ppm");
+	bool Result = m_Renderer->Initialize("output.ppm", m_WindowHandle);
 	if (!Result)
 	{
 		return false;

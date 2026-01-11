@@ -11,7 +11,7 @@ class SoftwareRenderer
 {
 public:
 	SoftwareRenderer(int Width = 1920);
-	bool Initialize(const char* OutFileName);
+	bool Initialize(const char* OutFileName, HWND hWnd);
 	void RenderPPM();
 
 
@@ -30,4 +30,6 @@ private:
 	float m_FocalLength;
 	Point3D m_CameraCenter;
 	std::ofstream m_OutFileStream;
+	HWND m_hWnd;
+	Color m_FrameBuffer[];
 };
