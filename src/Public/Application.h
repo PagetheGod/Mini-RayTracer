@@ -23,4 +23,5 @@ private:
 	WNDCLASS m_WindowClass;
 	HWND m_WindowHandle;
 	SoftwareRenderer* m_Renderer;
+	bool m_IsFirstPaint = true;
 };

@@ -6,14 +6,20 @@
 #include "Ray.h"
 #include "Color.h"
 
+
+class D2D1Class;
+
 #define WIN32_LEAN_AND_MEAN
 class SoftwareRenderer
 {
 public:
 	SoftwareRenderer(int Width = 1920);
 	bool Initialize(const char* OutFileName, HWND hWnd);
+	void ClearWindow();
 	void RenderPPM();
-
+	void RenderFrameBuffer();
+	void RenderToWindow();
+	void Shutdown();
 
 	~SoftwareRenderer() = default;
 
@@ -31,5 +37,6 @@ private:
 	Point3D m_CameraCenter;
 	std::ofstream m_OutFileStream;
 	HWND m_hWnd;
-	Color m_FrameBuffer[];
+	unsigned char* m_FrameBuffer;
+	D2D1Class* m_D2D1;
 };

@@ -18,11 +18,25 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 	WindowClass.lpszClassName = WindowClassName;
 	WindowClass.lpfnWndProc = &Application::WindowProc;
 
-	RegisterClass(&WindowClass);
+	if (!RegisterClass(&WindowClass))
+	{
+		unsigned long int ErrorCode = GetLastError();
+		wchar_t ErrorMessage[128];
+		wsprintf(ErrorMessage, L"Failed to register window class! Error code: %lu", ErrorCode);
+		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		return false;
+	}
 
 	//Center the window. Note that we are working with 0 based coordinates that start at the top left of the screen, not NDC
 	int PosX = (GetSystemMetrics(SM_CXSCREEN) - Width) / 2;
 	int PosY = (GetSystemMetrics(SM_CYSCREEN) - Height) / 2;
+
+	//Adjust the actual window client size to our assumed pixel counts - we do this because the actual client size is assumed size - paddings + borders and stuffs
+	RECT RC = RECT(0, 0, Width, Height);
+	AdjustWindowRectEx(&RC, WS_OVERLAPPEDWINDOW, false, 0);
+
+	int ActualWidth = RC.right - RC.left;
+	int ActualHeight = RC.bottom - RC.top;
 
 	//CreateWindowEx returns 0/NULL on failure
 	m_WindowHandle = CreateWindowEx(
@@ -32,7 +46,7 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 		WS_OVERLAPPEDWINDOW,
 		PosX,
 		PosY,
-		Width, Height,
+		ActualWidth, ActualHeight,
 		NULL,
 		NULL,
 		InhInstance,
@@ -124,7 +138,20 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 			}
 			else if (wParam == VK_RETURN)
 			{
-				m_Renderer->RenderPPM();
+				m_Renderer->RenderFrameBuffer();
+			}
+			return 0;
+		}
+		case WM_PAINT:
+		{
+			if (m_IsFirstPaint)
+			{
+				m_Renderer->ClearWindow();
+				m_IsFirstPaint = false;
+			}
+			else
+			{
+				m_Renderer->RenderToWindow();
 			}
 			return 0;
 		}
@@ -140,5 +167,6 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 void Application::Shutdown()
 {
 	m_WindowHandle = NULL;
+	m_Renderer->Shutdown();
 	delete m_Renderer;
 }

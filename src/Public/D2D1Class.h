@@ -2,6 +2,8 @@
 
 #include "Windows.h"
 #include <d2d1.h>
+#pragma comment(lib, "d2d1")
+
 
 #define WIN32_LEAN_AND_MEAN
 
@@ -11,7 +13,8 @@ public:
 	D2D1Class();
 	bool InitFactory();
 	HRESULT CreateGraphicResources(HWND hWnd);
-	HRESULT RenderBitmap(void* FrameBuffer);
+	void ClearBackground();
+	void RenderBitmap(void* FrameBuffer);
 
 	void Shutdown();
 	~D2D1Class() = default;

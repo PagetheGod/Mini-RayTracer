@@ -30,7 +30,11 @@ Vector3D& Vector3D::operator*=(const float Scalar)
 
 Vector3D& Vector3D::operator/=(const float Scalar)
 {
-	return *this *= (1.f / Scalar);
+	if (Scalar > 0.0001f)
+	{
+		return *this *= (1.f / Scalar);
+	}
+	return *this;
 }
 
 float Vector3D::Length() const
@@ -50,7 +54,7 @@ float Vector3D::Dot(const Vector3D& Other) const
 
 Vector3D Vector3D::Cross(const Vector3D& Other) const
 {
-	return Vector3D();
+	return Vector3D(Y * Other.Z -  Z *Other.Y, Z * Other.X - X * Other.Z, X * Other.Y - Y * Other.X);
 }
 
 Vector3D Vector3D::Normalize() const
