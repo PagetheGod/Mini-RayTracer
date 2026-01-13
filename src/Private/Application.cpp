@@ -27,6 +27,12 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 		return false;
 	}
 
+
+	float AspectRatio = 16.f / 9.f;
+	Height = (int)(Width / AspectRatio);
+    Height >= 1 ? Height : Height = 1;
+
+
 	//Center the window. Note that we are working with 0 based coordinates that start at the top left of the screen, not NDC
 	int PosX = (GetSystemMetrics(SM_CXSCREEN) - Width) / 2;
 	int PosY = (GetSystemMetrics(SM_CYSCREEN) - Height) / 2;
@@ -63,7 +69,7 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 	}
 
 	//For software rendering, especially for a ppm output, we only need to pass the width
-	m_Renderer = new SoftwareRenderer(Width);
+	m_Renderer = new SoftwareRenderer(Width, Height, AspectRatio);
 	bool Result = m_Renderer->Initialize("output.ppm", m_WindowHandle);
 	if (!Result)
 	{

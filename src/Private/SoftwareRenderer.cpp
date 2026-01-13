@@ -2,14 +2,11 @@
 #include "../Public/D2D1Class.h"
 
 
-SoftwareRenderer::SoftwareRenderer(int Width) : m_Width(Width), m_OutFileStream(std::ofstream()), m_FrameBuffer(nullptr), m_D2D1(nullptr)
+SoftwareRenderer::SoftwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()), 
+m_FrameBuffer(nullptr), m_D2D1(nullptr)
 {
-	m_AspectRatio = 16.f / 9.f;
-	m_Height = (int)(Width / m_AspectRatio);
-	m_Height >= 1 ? m_Height : m_Height = 1;
-
-	m_ViewportWidth = 2.f;
-	m_ViewportHeight = m_ViewportWidth / ((float)m_Width / (float)m_Height);
+	m_ViewportHeight = 2.f;
+	m_ViewportWidth = m_ViewportHeight * ((float)m_Width / (float)m_Height);
 }
 bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 {
@@ -127,15 +124,27 @@ void SoftwareRenderer::RenderFrameBuffer()
 			Ray CurrentRay = Ray(m_CameraCenter, RayDirection);
 
 			Color PixelColor = Color(0.f, 0.f, 0.f);
-			Vector3D UnitDirection = CurrentRay.Direction().Normalize();
-			float tx = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-			//Bilinear interpolation stuffs. Tbh I don't even know what am I accomplishing with this logic
-			Color PixelColorX = (1.f - tx) * Color(0.f, 0.f, 1.f) + tx * Color(0.f, 0.1f, 1.f);
-			float ty = 0.5f * (UnitDirection.Y + 1.f);
-			PixelColor = (1.f - ty) * PixelColorX + ty * Color(1.f, 0.f, 0.f);
+			Point3D SphereCenter = Point3D(0.f, 0.f, -1.f);
+			float t = TestHitSphere(SphereCenter, 0.5f, CurrentRay);
+			if (t > 0.f)
+			{
+				Point3D HitPoint = CurrentRay.At(t);
+				Vector3D Normal = HitPoint - SphereCenter;
+				Normal = Normal.Normalize();
+				Normal = 0.5f * Vector3D(Normal.X + 1.f, Normal.Y + 1.f, Normal.Z + 1.f);
+				PixelColor = Normal;
+			}
+			else
+			{
+				Vector3D UnitDirection = CurrentRay.Direction().Normalize();
+				float tx = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
+				//Bilinear interpolation stuffs. Tbh I don't even know what am I accomplishing with this logic
+				Color PixelColorX = (1.f - tx) * Color(0.f, 0.f, 1.f) + tx * Color(0.f, 0.1f, 1.f);
+				float ty = 0.5f * (UnitDirection.Y + 1.f);
+				PixelColor = (1.f - ty) * PixelColorX + ty * Color(1.f, 0.f, 0.f);
+			}
 			//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
 			size_t PixelIndex = (i * m_Width + j) * 4;
-
 			unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
 			unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
 			unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
@@ -167,6 +176,34 @@ void SoftwareRenderer::Shutdown()
 	}
 	delete[] m_FrameBuffer;
 	m_OutFileStream.close();
+}
+
+float SoftwareRenderer::TestHitSphere(const Point3D& Center, float Radius, const Ray& R)
+{
+	//A simple test function to do ray sphere intersection
+	Vector3D RayDir = R.Direction();
+	Point3D RayOrigin = R.Origin();
+	Vector3D RayOriToCenter = Center - RayOrigin;
+	
+	/*
+	* 1.Now let's do some simplifications, first notice that b has a factor of -2 in it
+	* 2.Let's assume for some number h, b = -2h, this will allows to simply b to just h, and the discriminant to h square minus ac, the four got factor out
+	* 3.We have h = -2 * RayDir dot RayOriToCenter/ -2, solve this equation and we get h = RayDir Dot RayOriToCenter
+	* 4.Also we can simply tho self dot products to length squared
+	*/
+
+	float a = RayDir.LengthSquared();
+	float h = (RayDir.Dot(RayOriToCenter));
+	float c = RayOriToCenter.LengthSquared() - Radius * Radius;
+
+
+	float Discriminant = h * h - a * c;
+	
+	if (Discriminant < 0.f)
+	{
+		return -1.f;
+	}
+	return (h - std::sqrt(Discriminant)) / a;
 }
 
 

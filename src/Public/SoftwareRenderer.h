@@ -1,19 +1,21 @@
 #pragma once
 
+
 #include <string>
 #include <fstream>
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "Ray.h"
 #include "Color.h"
-
+#include <strsafe.h>
 
 class D2D1Class;
 
-#define WIN32_LEAN_AND_MEAN
+
 class SoftwareRenderer
 {
 public:
-	SoftwareRenderer(int Width = 1920);
+	SoftwareRenderer(int Width, int Height, float AspectRatio);
 	bool Initialize(const char* OutFileName, HWND hWnd);
 	void ClearWindow();
 	void RenderPPM();
@@ -22,6 +24,9 @@ public:
 	void Shutdown();
 
 	~SoftwareRenderer() = default;
+
+private:
+	float TestHitSphere(const Point3D& Center, float Radius, const Ray& R);
 
 private:
 	int m_Width;

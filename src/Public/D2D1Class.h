@@ -1,11 +1,12 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 #include <d2d1.h>
 #pragma comment(lib, "d2d1")
 
 
-#define WIN32_LEAN_AND_MEAN
+
 
 class D2D1Class
 {
