@@ -115,6 +115,11 @@ void SoftwareRenderer::RenderFrameBuffer()
 	Vector3D ViewportUpperLeft = m_CameraCenter - Vector3D(0.f, 0.f, m_FocalLength) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
 
+	//Add spheres into the world, for now we do this here. Ideally we might want to do this in Application
+	HittableList World;
+	World.Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, 0.f, -1.f), 0.5f)));
+	World.Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, -100.5f, -1.f), 100.f)));
+
 	for (int i = 0; i < m_Height; i++)
 	{
 		for (int j = 0; j < m_Width; j++)
@@ -124,25 +129,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 			Ray CurrentRay = Ray(m_CameraCenter, RayDirection);
 
 			Color PixelColor = Color(0.f, 0.f, 0.f);
-			Point3D SphereCenter = Point3D(0.f, 0.f, -1.f);
-			float t = TestHitSphere(SphereCenter, 0.5f, CurrentRay);
-			if (t > 0.f)
-			{
-				Point3D HitPoint = CurrentRay.At(t);
-				Vector3D Normal = HitPoint - SphereCenter;
-				Normal = Normal.Normalize();
-				Normal = 0.5f * Vector3D(Normal.X + 1.f, Normal.Y + 1.f, Normal.Z + 1.f);
-				PixelColor = Normal;
-			}
-			else
-			{
-				Vector3D UnitDirection = CurrentRay.Direction().Normalize();
-				float tx = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-				//Bilinear interpolation stuffs. Tbh I don't even know what am I accomplishing with this logic
-				Color PixelColorX = (1.f - tx) * Color(0.f, 0.f, 1.f) + tx * Color(0.f, 0.1f, 1.f);
-				float ty = 0.5f * (UnitDirection.Y + 1.f);
-				PixelColor = (1.f - ty) * PixelColorX + ty * Color(1.f, 0.f, 0.f);
-			}
+			PixelColor = CalculateHitColor(CurrentRay, World);
 			//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
 			size_t PixelIndex = (i * m_Width + j) * 4;
 			unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
@@ -204,6 +191,18 @@ float SoftwareRenderer::TestHitSphere(const Point3D& Center, float Radius, const
 		return -1.f;
 	}
 	return (h - std::sqrt(Discriminant)) / a;
+}
+
+Color SoftwareRenderer::CalculateHitColor(const Ray& R, HittableList& World)
+{
+	HitRecord TempHitRecord;
+	if (World.Hit(R, 0.f, Constants::g_Infinity, TempHitRecord))
+	{
+		return 0.5f * Color(TempHitRecord.HitNormal + Color(1.f, 1.f, 1.f));
+	}
+	Vector3D UnitDirection = R.Direction().Normalize();
+	float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
+	return (1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f);
 }
 
 

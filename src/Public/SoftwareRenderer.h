@@ -5,8 +5,8 @@
 #include <fstream>
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include "Ray.h"
-#include "Color.h"
+#include "HittableList.h"
+#include "Sphere.h"
 #include <strsafe.h>
 
 class D2D1Class;
@@ -27,6 +27,8 @@ public:
 
 private:
 	float TestHitSphere(const Point3D& Center, float Radius, const Ray& R);
+	Color CalculateHitColor(const Ray& R, HittableList& World);
+
 
 private:
 	int m_Width;

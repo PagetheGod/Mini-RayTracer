@@ -19,7 +19,7 @@ public:
 
 
 	//Class-scope operator overloads
-	Vector3D operator-();
+	Vector3D operator-() const;
 	Vector3D& operator+=(const Vector3D& Other);
 	Vector3D& operator*=(const float Scalar);
 	Vector3D& operator/=(const float Scalar);

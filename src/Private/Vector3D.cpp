@@ -7,7 +7,7 @@ Vector3D::Vector3D(float InX, float InY, float InZ) : X(InX), Y(InY), Z(InZ)
 	
 }
 
-Vector3D Vector3D::operator-()
+Vector3D Vector3D::operator-() const
 {
 	return Vector3D(-X, -Y, -Z);
 }
