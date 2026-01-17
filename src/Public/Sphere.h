@@ -6,7 +6,7 @@ class Sphere : public Hittable
 {
 public:
 	Sphere(const Point3D& InCenter, const float InRadius);
-	virtual bool Hit(const Ray& R, float Ray_tMin, float Ray_tMax, HitRecord& OutHitRecord) override;
+	virtual bool Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord) override;
 
 private:
 	Point3D m_Center;

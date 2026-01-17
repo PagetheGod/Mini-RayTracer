@@ -6,15 +6,15 @@ HittableList::HittableList(std::shared_ptr<Hittable> Object)
 	m_Objects.push_back(Object);
 }
 
-bool HittableList::Hit(const Ray& R, float Ray_tMin, float Ray_tMax, HitRecord& OutHitRecord)
+bool HittableList::Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord)
 {
 	bool HasHit = false;
-	float ClosestSoFar = Ray_tMax;
+	float ClosestSoFar = HitInterval.Max;
 	HitRecord ClosestHitRecord;
 
 	for (const std::shared_ptr<Hittable>& Object : m_Objects)
 	{
-		if (Object->Hit(R, Ray_tMin, ClosestSoFar, ClosestHitRecord))
+		if (Object->Hit(R, HitInterval, ClosestHitRecord))
 		{
 			HasHit = true;
 			ClosestSoFar = ClosestHitRecord.t;

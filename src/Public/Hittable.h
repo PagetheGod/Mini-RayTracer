@@ -24,7 +24,7 @@ class Hittable
 {
 public:
 	virtual ~Hittable() = default;
-	virtual bool Hit(const Ray& R, float Ray_tMin, float Ray_tMax, HitRecord& OutHitRecord) = 0;
+	virtual bool Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord) = 0;
 	static void SetFaceNormal(const Ray& R, const Vector3D& OutwardNormal, HitRecord& OutHitRecord);
 };
 

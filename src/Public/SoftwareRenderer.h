@@ -5,12 +5,11 @@
 #include <fstream>
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include "HittableList.h"
 #include "Sphere.h"
+#include "Camera.h"
 #include <strsafe.h>
 
 class D2D1Class;
-
 
 class SoftwareRenderer
 {
@@ -26,7 +25,6 @@ public:
 	~SoftwareRenderer() = default;
 
 private:
-	float TestHitSphere(const Point3D& Center, float Radius, const Ray& R);
 	Color CalculateHitColor(const Ray& R, HittableList& World);
 
 
@@ -40,10 +38,11 @@ private:
 	Vector3D m_ViewportV;
 	Vector3D m_DeltaU;
 	Vector3D m_DeltaV;
-	float m_FocalLength;
-	Point3D m_CameraCenter;
+	Camera m_Camera;
+	HittableList* m_World;
 	std::ofstream m_OutFileStream;
 	HWND m_hWnd;
 	unsigned char* m_FrameBuffer;
 	D2D1Class* m_D2D1;
+	
 };
