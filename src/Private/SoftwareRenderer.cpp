@@ -1,9 +1,9 @@
 #include "../Public/SoftwareRenderer.h"
 #include "../Public/D2D1Class.h"
-
+#include "../Public/Timer.h"
 
 SoftwareRenderer::SoftwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()), 
-m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr)
+m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
 {
 	m_ViewportHeight = 2.f;
 	m_ViewportWidth = m_ViewportHeight * ((float)m_Width / (float)m_Height);
@@ -65,6 +65,9 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 		return false;
 	}
 
+	//Only start the thread pool if everything goes well
+	m_ThreadPool = new VThreadPool(16, true);
+
 	return true;
 }
 
@@ -121,36 +124,85 @@ void SoftwareRenderer::RenderFrameBuffer()
 	Point3D CameraCenter = m_Camera.CameraCenter;
 	Vector3D ViewportUpperLeft = CameraCenter - Vector3D(0.f, 0.f, m_Camera.FocalLength) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
-
+	double RenderTime = 0.0;
+	VTimer RenderTimer;
+	RenderTimer.Start();
 	//Add spheres into the world.
 	m_World = new HittableList(std::make_shared<Sphere>(Sphere(Point3D(0.f, 0.f, -1.f), 0.5f)));
 	m_World->Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, -100.5f, -1.f), 100.f)));
 
+
+	std::vector<std::future<int>> Futures;
+	Futures.reserve(1080);
 	for (int i = 0; i < m_Height; i++)
 	{
-		for (int j = 0; j < m_Width; j++)
+		if (MULTITHREADED)
 		{
-			Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
-			Vector3D RayDirection = PixelPos - CameraCenter;
-			Ray CurrentRay = Ray(CameraCenter, RayDirection);
+			Futures.push_back(m_ThreadPool->SubmitTask([this, CameraCenter, FirstPixelPos, i]()
+				{
+					for (int j = 0; j < m_Width; j++)
+					{
+						Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
+						Vector3D RayDirection = PixelPos - CameraCenter;
+						Ray CurrentRay = Ray(CameraCenter, RayDirection);
 
-			Color PixelColor = Color(0.f, 0.f, 0.f);
-			PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
-			//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
-			size_t PixelIndex = (i * m_Width + j) * 4;
-			unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
-			unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
-			unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
+						Color PixelColor = Color(0.f, 0.f, 0.f);
+						PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
+						//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
+						size_t PixelIndex = (i * m_Width + j) * 4;
+						unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
+						unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
+						unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
 
-			m_FrameBuffer[PixelIndex] = AdjustedBlue;
-			m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
-			m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
+						m_FrameBuffer[PixelIndex] = AdjustedBlue;
+						m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
+						m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
+					}
+					return i;
+				}));
 		}
-		//We send a draw call after every scanline
-		InvalidateRect(m_hWnd, nullptr, false);
-		UpdateWindow(m_hWnd);
+		else
+		{
+			for (int j = 0; j < m_Width; j++)
+			{
+				Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
+				Vector3D RayDirection = PixelPos - CameraCenter;
+				Ray CurrentRay = Ray(CameraCenter, RayDirection);
+
+				Color PixelColor = Color(0.f, 0.f, 0.f);
+				PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
+				//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
+				size_t PixelIndex = (i * m_Width + j) * 4;
+				unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
+				unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
+				unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
+
+				m_FrameBuffer[PixelIndex] = AdjustedBlue;
+				m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
+				m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
+			}
+			//We send a draw call after every scanline
+			InvalidateRect(m_hWnd, nullptr, false);
+			UpdateWindow(m_hWnd);
+		}
+		
 	}
-	MessageBox(NULL, L"Render Complete!", L"Info", MB_OK);
+	if (MULTITHREADED)
+	{
+		for (auto& Future : Futures)
+		{
+			int Scanline = Future.get();
+			RECT UpdateRegion{ 0, Scanline, m_Width, Scanline + 1};
+			InvalidateRect(m_hWnd, &UpdateRegion, false);
+			UpdateWindow(m_hWnd);
+		}
+	}
+	RenderTimer.Stop();
+	RenderTime = (double)RenderTimer.GetLastDuration() / 1000.0;
+	LPSTR CompleteMessage = new char[128];
+	StringCbPrintfExA(CompleteMessage, 128, NULL, NULL, STRSAFE_NULL_ON_FAILURE, "Render Complete! Time used: %0.3f", RenderTime);
+	MessageBoxExA(NULL, CompleteMessage, LPCSTR{"Info"}, MB_OK, NULL);
+
 	DestroyWindow(m_hWnd);
 }
 
@@ -169,20 +221,14 @@ void SoftwareRenderer::Shutdown()
 	}
 	delete[] m_FrameBuffer;
 	delete m_World;
+	delete m_ThreadPool;
 	m_OutFileStream.close();
 }
 
-
-Color SoftwareRenderer::CalculateHitColor(const Ray& R, HittableList& World)
+void SoftwareRenderer::MainThreadDraw()
 {
-	HitRecord TempHitRecord;
-	if (World.Hit(R, Interval(0.f, Constants::g_Infinity), TempHitRecord))
-	{
-		return 0.5f * Color(TempHitRecord.HitNormal + Color(1.f, 1.f, 1.f));
-	}
-	Vector3D UnitDirection = R.Direction().Normalize();
-	float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-	return (1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f);
+	InvalidateRect(m_hWnd, nullptr, false);
+	UpdateWindow(m_hWnd);
 }
 
 

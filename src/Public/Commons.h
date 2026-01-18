@@ -27,8 +27,10 @@ namespace Utility
 	}
 	inline static float RandomFloat()
 	{
-		static std::uniform_real_distribution<float> UniformDist;
-		static std::mt19937 RandomGenerator;
+		//thread_local makes the variable "static" to the thread that creates it. So other threads do not interfere.
+		//If we had just marked this as static, we basically get a chaotic race. Not only is the random generator not safe now, we are also slowing things down
+		thread_local std::uniform_real_distribution<float> UniformDist;
+		thread_local std::mt19937 RandomGenerator;
 		return UniformDist(RandomGenerator);
 	}
 	//Return a random float in the range [Min, Max), by default uses [0, 1)

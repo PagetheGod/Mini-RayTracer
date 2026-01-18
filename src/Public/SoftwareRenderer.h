@@ -7,7 +7,12 @@
 #include <Windows.h>
 #include "Sphere.h"
 #include "Camera.h"
+#include "ThreadPool.h"
+#include <atomic>
 #include <strsafe.h>
+
+
+#define MULTITHREADED 1
 
 class D2D1Class;
 
@@ -25,8 +30,7 @@ public:
 	~SoftwareRenderer() = default;
 
 private:
-	Color CalculateHitColor(const Ray& R, HittableList& World);
-
+	void MainThreadDraw();
 
 private:
 	int m_Width;
@@ -44,5 +48,6 @@ private:
 	HWND m_hWnd;
 	unsigned char* m_FrameBuffer;
 	D2D1Class* m_D2D1;
+	VThreadPool* m_ThreadPool;
 	
 };

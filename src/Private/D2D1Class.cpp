@@ -99,16 +99,22 @@ void D2D1Class::RenderBitmap(void* FrameBuffer)
 	HRESULT Result = CreateGraphicResources(m_hWnd);
 	if (SUCCEEDED(Result))
 	{
+		RECT UpdateRegion{ 0, 0, 0, 0 };
+
+		size_t ScanlineOffset = sizeof(unsigned char) * 4 * m_Width;
+
 		PAINTSTRUCT PS;
 		BeginPaint(m_hWnd, &PS);
+		UpdateRegion = PS.rcPaint;
 		
 		m_RenderTarget->BeginDraw();
 
-		m_RenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
+		//m_RenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
 
-		D2D1_RECT_U Rect = D2D1::RectU(0, 0, m_Width, m_Height);
-
-		Result = m_Bitmap->CopyFromMemory(&Rect, FrameBuffer, sizeof(unsigned char) * 4 *  m_Width);
+		D2D1_RECT_F D2D1RectF = D2D1::RectF((float)UpdateRegion.left, (float)UpdateRegion.top, (float)UpdateRegion.right, (float)UpdateRegion.bottom);
+		D2D1_RECT_U D2D1RectU = D2D1::RectU(UpdateRegion.left, UpdateRegion.top, UpdateRegion.right, UpdateRegion.bottom);
+		unsigned char* Start = static_cast<unsigned char*>(FrameBuffer) + UpdateRegion.top * ScanlineOffset;
+		Result = m_Bitmap->CopyFromMemory(&D2D1RectU, Start, ScanlineOffset);
 		if (FAILED(Result))
 		{
 			unsigned long int ErrorCode = GetLastError();
@@ -118,7 +124,7 @@ void D2D1Class::RenderBitmap(void* FrameBuffer)
 		}
 		else
 		{
-			m_RenderTarget->DrawBitmap(m_Bitmap);
+			m_RenderTarget->DrawBitmap(m_Bitmap, &D2D1RectF, 1.f, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, &D2D1RectF);
 		}
 		Result = m_RenderTarget->EndDraw();
 		if (FAILED(Result) || Result == D2DERR_RECREATE_TARGET)
