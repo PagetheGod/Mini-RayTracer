@@ -68,6 +68,41 @@ Vector3D Vector3D::Normalize() const
 	return Vector3D(X / Length, Y / Length, Z / Length);
 }
 
+Vector3D Vector3D::RandomVector()
+{
+	return Vector3D(Utility::RandomFloat(), Utility::RandomFloat(), Utility::RandomFloat());
+}
+
+Vector3D Vector3D::RandomVector(float Min, float Max)
+{
+	return Vector3D(Utility::RandomFloat(Min, Max), Utility::RandomFloat(Min, Max), Utility::RandomFloat(Min, Max));
+}
+
+//Generate a random unit vector within the unit sphere using rejection
+Vector3D Vector3D::RandomUnitVector()
+{
+	while (true)
+	{
+		Vector3D Candidate = Vector3D::RandomVector(-1.f, 1.f);
+		float LengthSq = Candidate.LengthSquared();
+		//Bounded below to avoid overflow due to float imprecisions
+		if (LengthSq > 1e-38 && LengthSq <= 1.f)
+		{
+			return Candidate / std::sqrt(LengthSq);
+		}
+	}
+}
+//Generate a random unit vector within the unit hemisphere given by a normal using rejection
+Vector3D Vector3D::RandomUnitOnHemiSphere(const Vector3D& Normal)
+{
+	Vector3D Candidate = Vector3D::RandomUnitVector();
+	if (Candidate.Dot(Normal) > 0.f)
+	{
+		return Candidate;
+	}
+	return -Candidate;
+}
+
 std::ostream& operator<<(std::ostream& OutFileStream, const Vector3D& Vector)
 {
 	return OutFileStream << Vector.X << ' ' << Vector.Y << ' ' << Vector.Z;

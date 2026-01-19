@@ -7,10 +7,7 @@
 #include <limits>
 #include <random>
 
-//Custom headers. 
-#include "Vector3D.h"
-#include "Ray.h"
-#include "Color.h"
+//Custom headers
 
 
 namespace Constants

@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include "Commons.h"
 
 class Vector3D
 {
@@ -30,7 +31,11 @@ public:
 	float Dot(const Vector3D& Other) const;
 	Vector3D Cross(const Vector3D& Other) const;
 	Vector3D Normalize() const;
-	
+	static Vector3D RandomVector();
+	static Vector3D RandomVector(float Min, float Max);
+	static Vector3D RandomUnitVector();
+	static Vector3D RandomUnitOnHemiSphere(const Vector3D& Normal);
+
 public:
 	//The components do not follow the m_ convention because accessing them through component names is more natural
 	float X;

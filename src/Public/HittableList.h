@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Hittable.h"
+#include "Color.h"
 #include <vector>
 
 

@@ -30,7 +30,6 @@ public:
 	~SoftwareRenderer() = default;
 
 private:
-	void MainThreadDraw();
 
 private:
 	int m_Width;
@@ -48,6 +47,6 @@ private:
 	HWND m_hWnd;
 	unsigned char* m_FrameBuffer;
 	D2D1Class* m_D2D1;
-	VThreadPool* m_ThreadPool;
+	std::unique_ptr <VThreadPool> m_ThreadPool;
 	
 };

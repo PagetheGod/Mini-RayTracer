@@ -24,6 +24,7 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 	//Remember that our camera center is also the center of our coordinate system
 	m_Camera = Camera();
 	m_Camera.SetSampleCount(100);
+	m_Camera.SetMaxDepth(25);
 
 	m_ViewportU = Vector3D(m_ViewportWidth, 0.f, 0.f);
 	m_ViewportV = Vector3D(0.f, -m_ViewportHeight, 0.f);//This is negative because the viewport Y is inverted compared to right hand coordinate system
@@ -66,7 +67,7 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 	}
 
 	//Only start the thread pool if everything goes well
-	m_ThreadPool = new VThreadPool(16, true);
+	m_ThreadPool = std::make_unique<VThreadPool>(16, true);
 
 	return true;
 }
@@ -139,27 +140,27 @@ void SoftwareRenderer::RenderFrameBuffer()
 		if (MULTITHREADED)
 		{
 			Futures.push_back(m_ThreadPool->SubmitTask([this, CameraCenter, FirstPixelPos, i]()
+			{
+				for (int j = 0; j < m_Width; j++)
 				{
-					for (int j = 0; j < m_Width; j++)
-					{
-						Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
-						Vector3D RayDirection = PixelPos - CameraCenter;
-						Ray CurrentRay = Ray(CameraCenter, RayDirection);
+					Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
+					Vector3D RayDirection = PixelPos - CameraCenter;
+					Ray CurrentRay = Ray(CameraCenter, RayDirection);
 
-						Color PixelColor = Color(0.f, 0.f, 0.f);
-						PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
-						//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
-						size_t PixelIndex = (i * m_Width + j) * 4;
-						unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
-						unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
-						unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
+					Color PixelColor = Color(0.f, 0.f, 0.f);
+					PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
+					//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
+					size_t PixelIndex = (i * m_Width + j) * 4;
+					unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
+					unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
+					unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
 
-						m_FrameBuffer[PixelIndex] = AdjustedBlue;
-						m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
-						m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
-					}
-					return i;
-				}));
+					m_FrameBuffer[PixelIndex] = AdjustedBlue;
+					m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
+					m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
+				}
+				return i;
+			}));
 		}
 		else
 		{
@@ -199,9 +200,9 @@ void SoftwareRenderer::RenderFrameBuffer()
 	}
 	RenderTimer.Stop();
 	RenderTime = (double)RenderTimer.GetLastDuration() / 1000.0;
-	LPSTR CompleteMessage = new char[128];
-	StringCbPrintfExA(CompleteMessage, 128, NULL, NULL, STRSAFE_NULL_ON_FAILURE, "Render Complete! Time used: %0.3f", RenderTime);
-	MessageBoxExA(NULL, CompleteMessage, LPCSTR{"Info"}, MB_OK, NULL);
+	std::vector<char> CompleteMessage(128);
+	StringCbPrintfExA(CompleteMessage.data(), 128, NULL, NULL, STRSAFE_NULL_ON_FAILURE, "Render Complete! Time used: %0.3f", RenderTime);
+	MessageBoxExA(NULL, CompleteMessage.data(), LPCSTR{"Info"}, MB_OK, NULL);
 
 	DestroyWindow(m_hWnd);
 }
@@ -221,15 +222,6 @@ void SoftwareRenderer::Shutdown()
 	}
 	delete[] m_FrameBuffer;
 	delete m_World;
-	delete m_ThreadPool;
 	m_OutFileStream.close();
 }
-
-void SoftwareRenderer::MainThreadDraw()
-{
-	InvalidateRect(m_hWnd, nullptr, false);
-	UpdateWindow(m_hWnd);
-}
-
-
 

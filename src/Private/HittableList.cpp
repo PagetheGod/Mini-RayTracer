@@ -14,7 +14,7 @@ bool HittableList::Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitReco
 
 	for (const std::shared_ptr<Hittable>& Object : m_Objects)
 	{
-		if (Object->Hit(R, HitInterval, ClosestHitRecord))
+		if (Object->Hit(R, Interval(HitInterval.Min, ClosestSoFar), ClosestHitRecord))
 		{
 			HasHit = true;
 			ClosestSoFar = ClosestHitRecord.t;
