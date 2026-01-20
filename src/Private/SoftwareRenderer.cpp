@@ -129,6 +129,8 @@ void SoftwareRenderer::RenderFrameBuffer()
 	VTimer RenderTimer;
 	RenderTimer.Start();
 	//Add spheres into the world.
+	//I do not like the idea of an array of shared pointers. Potential pointer chasing and cache misses once we start adding more objects to the world
+	//Might change how we store the hittable data once we are done with the software rendering logic(considering SoA?)
 	m_World = new HittableList(std::make_shared<Sphere>(Sphere(Point3D(0.f, 0.f, -1.f), 0.5f)));
 	m_World->Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, -100.5f, -1.f), 100.f)));
 
@@ -164,6 +166,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 		}
 		else
 		{
+			//This logic will be removed in the future. Right now it's just here for references.
 			for (int j = 0; j < m_Width; j++)
 			{
 				Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);

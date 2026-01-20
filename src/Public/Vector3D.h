@@ -38,6 +38,7 @@ public:
 
 public:
 	//The components do not follow the m_ convention because accessing them through component names is more natural
+	//Also they are not really member private so there's no reason to use m_ anyway
 	float X;
 	float Y;
 	float Z;

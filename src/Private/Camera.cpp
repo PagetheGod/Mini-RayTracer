@@ -38,11 +38,19 @@ Vector3D Camera::SampleSquare() const
 	return Vector3D(Utility::RandomFloat(-0.5f, 0.5f), Utility::RandomFloat(-0.5f, 0.5f), 0.f);
 }
 
+/*
+* This function uses stack for now. It's mostly used for getting some practices with stack
+* It's not optimal, since we would only ever have one Ray on the stack
+* This can be done much cleaner using a straightfoward for-loop
+*/
 Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 {
 	Color PixelColor = Color{ 0.f, 0.f, 0.f };
 	HitRecord TempHitRecord;
-	std::stack<Ray> TraceStack;
+	//The default container is a deque, which is a performance killer. Around 50% slower.
+	std::vector<Ray> Cont;
+	Cont.reserve(m_MaxDepth);
+	std::stack<Ray, std::vector<Ray>> TraceStack(std::move(Cont));
 	int CurrentDepth = 0;
 	TraceStack.push(R);
 	while (!TraceStack.empty() && CurrentDepth < m_MaxDepth)

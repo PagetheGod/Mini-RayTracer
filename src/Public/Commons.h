@@ -1,5 +1,10 @@
 #pragma once
 
+/*
+* This file strays pretty far from the book because I really do not like how the book introduces tons of circular dependencies in the Common header
+*/
+
+
 //Standards
 #include <cmath>
 #include <iostream>
