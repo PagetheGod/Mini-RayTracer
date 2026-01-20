@@ -7,7 +7,7 @@ https://raytracing.github.io/books/RayTracingInOneWeekend.html
 
 However, this project does differ from the original implementations in multiple aspects.
 
---
+---
 
 ## What's Different?
 
