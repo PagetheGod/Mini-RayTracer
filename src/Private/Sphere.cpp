@@ -5,7 +5,7 @@ Sphere::Sphere(const Point3D& InCenter, const float InRadius) : m_Center(InCente
 
 }
 
-bool Sphere::Hit(const Ray& R, float Ray_tMin, float Ray_tMax, HitRecord& OutHitRecord)
+bool Sphere::Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord)
 {
 	//A simple test function to do ray sphere intersection
 	Vector3D RayDir = R.Direction();
@@ -35,10 +35,10 @@ bool Sphere::Hit(const Ray& R, float Ray_tMin, float Ray_tMax, HitRecord& OutHit
 	
 	float Root = (h - SqrtDis) / a;
 
-	if (Root < Ray_tMin || Root > Ray_tMax)
+	if (!HitInterval.Surrounds(Root))
 	{
 		Root = (h + SqrtDis) / a;
-		if (Root < Ray_tMin || Root > Ray_tMax)
+		if (!HitInterval.Surrounds(Root))
 		{
 			return false;
 		}

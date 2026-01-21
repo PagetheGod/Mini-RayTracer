@@ -22,7 +22,10 @@ public:
 	{
 		return Max - Min;
 	}
-
+	inline float Clamp(float ToClamp) const
+	{
+		return std::clamp(ToClamp, Min, Max);
+	}
 public:
 	float Min = Constants::g_Infinity;
 	float Max = -Constants::g_Infinity;

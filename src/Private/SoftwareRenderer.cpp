@@ -1,9 +1,9 @@
 #include "../Public/SoftwareRenderer.h"
 #include "../Public/D2D1Class.h"
-
+#include "../Public/Timer.h"
 
 SoftwareRenderer::SoftwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()), 
-m_FrameBuffer(nullptr), m_D2D1(nullptr)
+m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
 {
 	m_ViewportHeight = 2.f;
 	m_ViewportWidth = m_ViewportHeight * ((float)m_Width / (float)m_Height);
@@ -21,10 +21,10 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 	
 	m_hWnd = hWnd;
 
-	//Initialize camera parameters and delta U,V
-	//The camera center is also the origin of our coordinate system
-	m_FocalLength = 1.f;
-	m_CameraCenter = Point3D(0.f, 0.f, 0.f);
+	//Remember that our camera center is also the center of our coordinate system
+	m_Camera = Camera();
+	m_Camera.SetSampleCount(100);
+	m_Camera.SetMaxDepth(25);
 
 	m_ViewportU = Vector3D(m_ViewportWidth, 0.f, 0.f);
 	m_ViewportV = Vector3D(0.f, -m_ViewportHeight, 0.f);//This is negative because the viewport Y is inverted compared to right hand coordinate system
@@ -66,6 +66,9 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 		return false;
 	}
 
+	//Only start the thread pool if everything goes well
+	m_ThreadPool = std::make_unique<VThreadPool>(16, true);
+
 	return true;
 }
 
@@ -82,7 +85,8 @@ void SoftwareRenderer::RenderPPM()
 	* 2. The viewport contains all the pixels(from 0th to Width - 1), however, we add half-pixel length spacings in both left-right and top-bottom, so the viewport can be divided nicely into Width x Height areas
 	* 3. Step 2 means we need to add half of the delta U and V to get to the first pixel location
 	*/
-	Vector3D ViewportUpperLeft = m_CameraCenter - Vector3D(0.f, 0.f, m_FocalLength) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
+	Point3D CameraCenter = m_Camera.CameraCenter;
+	Vector3D ViewportUpperLeft = CameraCenter - Vector3D(0.f, 0.f, m_Camera.FocalLength) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
 
 	m_OutFileStream << "P3\n" << m_Width << ' ' << m_Height << "\n255\n";
@@ -93,8 +97,8 @@ void SoftwareRenderer::RenderPPM()
 		for (int j = 0; j < m_Width; j++)
 		{
 			Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
-			Vector3D RayDirection = PixelPos - m_CameraCenter;
-			Ray CurrentRay = Ray(m_CameraCenter, RayDirection);
+			Vector3D RayDirection = PixelPos - CameraCenter;
+			Ray CurrentRay = Ray(CameraCenter, RayDirection);
 
 			Color PixelColor = Color(0.f, 0.f, 0.f);
 			Vector3D UnitDirection = CurrentRay.Direction().Normalize();
@@ -112,39 +116,103 @@ void SoftwareRenderer::RenderPPM()
 
 void SoftwareRenderer::RenderFrameBuffer()
 {
-	Vector3D ViewportUpperLeft = m_CameraCenter - Vector3D(0.f, 0.f, m_FocalLength) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
+	/*
+	* Few things to note about getting the viewport upper left and the first pixel position:
+	* 1. The camera is pointing straight down the negative Z axis(Right-hand system btw), and pointing at the center of the viewport, hence subtracting focal length in Z
+	* 2. The viewport contains all the pixels(from 0th to Width - 1), however, we add half-pixel length spacings in both left-right and top-bottom, so the viewport can be divided nicely into Width x Height areas
+	* 3. Step 2 means we need to add half of the delta U and V to get to the first pixel location
+	*/
+	Point3D CameraCenter = m_Camera.CameraCenter;
+	Vector3D ViewportUpperLeft = CameraCenter - Vector3D(0.f, 0.f, m_Camera.FocalLength) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
+	double RenderTime = 0.0;
+	VTimer RenderTimer;
+	RenderTimer.Start();
+	//Add spheres into the world.
+	//I do not like the idea of an array of shared pointers. Potential pointer chasing and cache misses once we start adding more objects to the world
+	//Might change how we store the hittable data once we are done with the software rendering logic(considering SoA?)
+	m_World = new HittableList(std::make_shared<Sphere>(Sphere(Point3D(0.f, 0.f, -1.f), 0.5f)));
+	m_World->Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, -100.5f, -1.f), 100.f)));
 
-	//Add spheres into the world, for now we do this here. Ideally we might want to do this in Application
-	HittableList World;
-	World.Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, 0.f, -1.f), 0.5f)));
-	World.Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, -100.5f, -1.f), 100.f)));
 
+	std::vector<std::future<int>> Futures;
+	Futures.reserve(1080);
 	for (int i = 0; i < m_Height; i++)
 	{
-		for (int j = 0; j < m_Width; j++)
+		if (MULTITHREADED)
 		{
-			Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
-			Vector3D RayDirection = PixelPos - m_CameraCenter;
-			Ray CurrentRay = Ray(m_CameraCenter, RayDirection);
+			Futures.push_back(m_ThreadPool->SubmitTask([this, CameraCenter, FirstPixelPos, i]()
+			{
+				for (int j = 0; j < m_Width; j++)
+				{
+					Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
+					Vector3D RayDirection = PixelPos - CameraCenter;
+					Ray CurrentRay = Ray(CameraCenter, RayDirection);
 
-			Color PixelColor = Color(0.f, 0.f, 0.f);
-			PixelColor = CalculateHitColor(CurrentRay, World);
-			//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
-			size_t PixelIndex = (i * m_Width + j) * 4;
-			unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
-			unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
-			unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
+					Color PixelColor = Color(0.f, 0.f, 0.f);
+					PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
+					//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
+					size_t PixelIndex = (i * m_Width + j) * 4;
+					
+					//Apply gamma correction to color components and adjust them to between 0 and 255
+					unsigned char AdjustedRed = LinearToGamma(PixelColor.R()); (unsigned char)(255.999f * PixelColor.R());
+					unsigned char AdjustedGreen = LinearToGamma(PixelColor.G()); (unsigned char)(255.999f * PixelColor.G());
+					unsigned char AdjustedBlue = LinearToGamma(PixelColor.B()); (unsigned char)(255.999f * PixelColor.B());
 
-			m_FrameBuffer[PixelIndex] = AdjustedBlue;
-			m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
-			m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
+					AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
+					AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
+					AdjustedBlue =  (unsigned char)(255.999f * PixelColor.B());
+
+					m_FrameBuffer[PixelIndex] = AdjustedBlue;
+					m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
+					m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
+				}
+				return i;
+			}));
 		}
-		//We send a draw call after every scanline
-		InvalidateRect(m_hWnd, nullptr, false);
-		UpdateWindow(m_hWnd);
+		else
+		{
+			//This logic will be removed in the future. Right now it's just here for references.
+			for (int j = 0; j < m_Width; j++)
+			{
+				Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
+				Vector3D RayDirection = PixelPos - CameraCenter;
+				Ray CurrentRay = Ray(CameraCenter, RayDirection);
+
+				Color PixelColor = Color(0.f, 0.f, 0.f);
+				PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
+				//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
+				size_t PixelIndex = (i * m_Width + j) * 4;
+				unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
+				unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
+				unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
+
+				m_FrameBuffer[PixelIndex] = AdjustedBlue;
+				m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
+				m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
+			}
+			//We send a draw call after every scanline
+			InvalidateRect(m_hWnd, nullptr, false);
+			UpdateWindow(m_hWnd);
+		}
+		
 	}
-	MessageBox(NULL, L"Render Complete!", L"Info", MB_OK);
+	if (MULTITHREADED)
+	{
+		for (auto& Future : Futures)
+		{
+			int Scanline = Future.get();
+			RECT UpdateRegion{ 0, Scanline, m_Width, Scanline + 1};
+			InvalidateRect(m_hWnd, &UpdateRegion, false);
+			UpdateWindow(m_hWnd);
+		}
+	}
+	RenderTimer.Stop();
+	RenderTime = (double)RenderTimer.GetLastDuration() / 1000.0;
+	std::vector<char> CompleteMessage(128);
+	StringCbPrintfExA(CompleteMessage.data(), 128, NULL, NULL, STRSAFE_NULL_ON_FAILURE, "Render Complete! Time used: %0.3f", RenderTime);
+	MessageBoxExA(NULL, CompleteMessage.data(), LPCSTR{"Info"}, MB_OK, NULL);
+
 	DestroyWindow(m_hWnd);
 }
 
@@ -162,48 +230,7 @@ void SoftwareRenderer::Shutdown()
 		m_D2D1 = nullptr;
 	}
 	delete[] m_FrameBuffer;
+	delete m_World;
 	m_OutFileStream.close();
 }
-
-float SoftwareRenderer::TestHitSphere(const Point3D& Center, float Radius, const Ray& R)
-{
-	//A simple test function to do ray sphere intersection
-	Vector3D RayDir = R.Direction();
-	Point3D RayOrigin = R.Origin();
-	Vector3D RayOriToCenter = Center - RayOrigin;
-	
-	/*
-	* 1.Now let's do some simplifications, first notice that b has a factor of -2 in it
-	* 2.Let's assume for some number h, b = -2h, this will allows to simply b to just h, and the discriminant to h square minus ac, the four got factor out
-	* 3.We have h = -2 * RayDir dot RayOriToCenter/ -2, solve this equation and we get h = RayDir Dot RayOriToCenter
-	* 4.Also we can simply tho self dot products to length squared
-	*/
-
-	float a = RayDir.LengthSquared();
-	float h = (RayDir.Dot(RayOriToCenter));
-	float c = RayOriToCenter.LengthSquared() - Radius * Radius;
-
-
-	float Discriminant = h * h - a * c;
-	
-	if (Discriminant < 0.f)
-	{
-		return -1.f;
-	}
-	return (h - std::sqrt(Discriminant)) / a;
-}
-
-Color SoftwareRenderer::CalculateHitColor(const Ray& R, HittableList& World)
-{
-	HitRecord TempHitRecord;
-	if (World.Hit(R, 0.f, Constants::g_Infinity, TempHitRecord))
-	{
-		return 0.5f * Color(TempHitRecord.HitNormal + Color(1.f, 1.f, 1.f));
-	}
-	Vector3D UnitDirection = R.Direction().Normalize();
-	float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-	return (1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f);
-}
-
-
 
