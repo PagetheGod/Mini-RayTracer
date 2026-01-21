@@ -26,3 +26,13 @@ Color NormalizeColor(const Color& PixelColor)
 	
 	return Color(AdjustedRed, AdjustedGreen, AdjustedBlue);
 }
+
+//Our color values are in linear space at first, transform it to gamma space for display
+float LinearToGamma(const float Component)
+{
+	if (Component > 0.f)
+	{
+		return 1 / std::sqrt(Component);
+	}
+	return 0.f;
+}

@@ -153,9 +153,15 @@ void SoftwareRenderer::RenderFrameBuffer()
 					PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
 					//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
 					size_t PixelIndex = (i * m_Width + j) * 4;
-					unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
-					unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
-					unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
+					
+					//Apply gamma correction to color components and adjust them to between 0 and 255
+					unsigned char AdjustedRed = LinearToGamma(PixelColor.R()); (unsigned char)(255.999f * PixelColor.R());
+					unsigned char AdjustedGreen = LinearToGamma(PixelColor.G()); (unsigned char)(255.999f * PixelColor.G());
+					unsigned char AdjustedBlue = LinearToGamma(PixelColor.B()); (unsigned char)(255.999f * PixelColor.B());
+
+					AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
+					AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
+					AdjustedBlue =  (unsigned char)(255.999f * PixelColor.B());
 
 					m_FrameBuffer[PixelIndex] = AdjustedBlue;
 					m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;

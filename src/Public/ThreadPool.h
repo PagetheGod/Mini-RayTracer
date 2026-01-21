@@ -12,14 +12,14 @@
 //A basic thread pool. Credit goes to: https://github.com/progschj/ThreadPool/blob/master/ThreadPool.h
 /*
 * I made the following changes:
-* 1. Changed the std::result_of to std::invoke_result (in SubmitTask) because the former is deprecated in C++ 17
+* 1. Changed the std::result_of to std::invoke_result (in SubmitTask) because the former was deprecated in C++ 17
 * 2. Added logics in the constructor to allow user(which is myself) to choose whether they want to specify a custom thread count.
 * 3. Added logics in the constructor to cap our max worker thread counts at 3/4 the user's concurrency
 */
 class VThreadPool
 {
 public:
-	VThreadPool(size_t NumThreads = 0, bool IsUsingCustomThreadCount = false);
+	VThreadPool(size_t NumThreads = 2, bool IsUsingCustomThreadCount = false);
 	~VThreadPool();
 
 	/*

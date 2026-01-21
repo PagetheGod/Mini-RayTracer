@@ -1,19 +1,21 @@
 #include "../Public/Timer.h"
 
+using namespace std::chrono;
+
 void VTimer::Start()
 {
 	m_StartTime = high_resolution_clock::now();
 	m_EndTime = STDTimePoint{};
-	m_LastDuration = 0.0;
+	m_LastDuration = 0;
 	m_HasStarted = true;
 }
 
 //Returns the time elapsed in Ms because WTF MSVC. Might be a good idea to add in option to allow user to choose ms/s
-double VTimer::GetTimeElapsed() const
+long long int VTimer::GetTimeElapsed() const
 {
 	if (!m_HasStarted)
 	{
-		return 0.0;
+		return 0;
 	}
 	else
 	{

@@ -41,13 +41,34 @@ Vector3D Camera::SampleSquare() const
 /*
 * This function uses stack for now. It's mostly used for getting some practices with stack
 * It's not optimal, since we would only ever have one Ray on the stack
-* This can be done much cleaner using a straightfoward for-loop
+* It had since been changed to using a for-loop. However, the stack implementations are kept for reference and possible future uses
 */
 Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 {
 	Color PixelColor = Color{ 0.f, 0.f, 0.f };
 	HitRecord TempHitRecord;
-	//The default container is a deque, which is a performance killer. Around 50% slower.
+	Ray CurrentRay = R;
+	for (int i = 0; i < m_MaxDepth; i++)
+	{
+		if (World.Hit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord))
+		{
+			/*
+			* Lambertian reflection - light is more likely to bounce in directions close to normal
+			* So we add a random unit vector to the normal. To get a random bounce on the unit tangent sphere
+			*/
+			Vector3D DiffuseDirection = Vector3D::RandomUnitVector() + TempHitRecord.HitNormal;
+			CurrentRay = Ray(TempHitRecord.HitPoint, DiffuseDirection);
+		}
+		else
+		{
+			Vector3D UnitDirection = CurrentRay.Direction().Normalize();
+			float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
+			PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
+			return std::pow(0.5f, i) * PixelColor;
+		}
+	}
+
+	/*
 	std::vector<Ray> Cont;
 	Cont.reserve(m_MaxDepth);
 	std::stack<Ray, std::vector<Ray>> TraceStack(std::move(Cont));
@@ -71,7 +92,7 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 			PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
 			return std::pow(0.5f, CurrentDepth) * PixelColor;
 		}
-	}
+	}*/
 
 	return Color{ 0.f, 0.f, 0.f };
 }

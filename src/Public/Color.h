@@ -8,3 +8,4 @@ using Color = Vector3D;
 
 void WriteColor(std::ostream& OutFileStream, const Color& PixelColor);
 Color NormalizeColor(const Color& PixelColor);
+float LinearToGamma(const float Componennt);

@@ -12,15 +12,15 @@
 
 
 using STDTimePoint = std::chrono::steady_clock::time_point;
-using namespace std::chrono;
+
 
 class VTimer
 {
 public:
 	VTimer() = default;
 	void Start();
-	double GetTimeElapsed() const;
-	double GetLastDuration() const
+	long long int GetTimeElapsed() const;
+	long long int GetLastDuration() const
 	{
 		return m_LastDuration;
 	}
@@ -30,6 +30,6 @@ private:
 	//Store the time point 
 	STDTimePoint m_StartTime;
 	STDTimePoint m_EndTime;
-	double m_LastDuration = 0.0;
+	long long int m_LastDuration = 0;
 	bool m_HasStarted = false;
 };
