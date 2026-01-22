@@ -47,7 +47,7 @@ However, this project does differ from the original implementations in multiple 
 
 ## Project Status
 
-This project is **ongoing** and primarily intended as a learning and experimentation platform.
+This project is still ongoing and primarily intended as a learning and experimentation platform.
 
 Planned future work includes:
 - Further refactoring and cleanup of rendering architecture
