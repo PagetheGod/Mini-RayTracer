@@ -1,0 +1,15 @@
+#include "../Public/Lambertian.h"
+
+bool Lambertian::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutAttenuation, Ray& OutScattered)
+{
+	//There's a chance that the random unit vector is pointing opposite to the normal, so we need to check for 0
+	Vector3D ScatterDirection = Vector3D::RandomUnitVector() + InHitRecord.HitNormal;
+	if (ScatterDirection.NearZero())
+	{
+		ScatterDirection = InHitRecord.HitNormal;
+	}
+	OutScattered = Ray(InHitRecord.HitPoint, ScatterDirection);
+	OutAttenuation = m_Albedo;
+
+	return true;
+}

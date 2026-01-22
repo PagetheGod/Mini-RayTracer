@@ -155,9 +155,9 @@ void SoftwareRenderer::RenderFrameBuffer()
 					size_t PixelIndex = (i * m_Width + j) * 4;
 					
 					//Apply gamma correction to color components and adjust them to between 0 and 255
-					unsigned char AdjustedRed = LinearToGamma(PixelColor.R()); (unsigned char)(255.999f * PixelColor.R());
-					unsigned char AdjustedGreen = LinearToGamma(PixelColor.G()); (unsigned char)(255.999f * PixelColor.G());
-					unsigned char AdjustedBlue = LinearToGamma(PixelColor.B()); (unsigned char)(255.999f * PixelColor.B());
+					unsigned char AdjustedRed = (unsigned char)LinearToGamma(PixelColor.R());
+					unsigned char AdjustedGreen = (unsigned char)LinearToGamma(PixelColor.G());
+					unsigned char AdjustedBlue = (unsigned char)LinearToGamma(PixelColor.B());
 
 					AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
 					AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());

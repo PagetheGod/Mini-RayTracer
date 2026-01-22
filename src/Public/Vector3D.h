@@ -7,10 +7,6 @@ class Vector3D
 public:
 	Vector3D(float InX = 0.0, float InY = 0.0, float InZ = 0.0);
 
-	//Getters - for point
-	float GetX() const { return X; }
-	float GetY() const { return Y; }
-	float GetZ() const { return Z; }
 	//Getters - for color
 	float R() const { return X; }
 	float G() const { return Y; }
@@ -31,6 +27,7 @@ public:
 	float Dot(const Vector3D& Other) const;
 	Vector3D Cross(const Vector3D& Other) const;
 	Vector3D Normalize() const;
+	bool NearZero() const;
 	static Vector3D RandomVector();
 	static Vector3D RandomVector(float Min, float Max);
 	static Vector3D RandomUnitVector();

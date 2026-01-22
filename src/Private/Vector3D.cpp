@@ -68,6 +68,12 @@ Vector3D Vector3D::Normalize() const
 	return Vector3D(X / Length, Y / Length, Z / Length);
 }
 
+//Check if a vector is near 0 to avoid explosion later
+bool Vector3D::NearZero() const
+{
+	return (std::abs(X) <= 1e-8 && std::abs(Y) <= 1e-8 && std::abs(Z) <= 1e-8);
+}
+
 Vector3D Vector3D::RandomVector()
 {
 	return Vector3D(Utility::RandomFloat(), Utility::RandomFloat(), Utility::RandomFloat());

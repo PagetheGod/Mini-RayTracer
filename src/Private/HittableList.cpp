@@ -37,9 +37,8 @@ void HittableList::Add(std::shared_ptr<Hittable> Object)
 	m_Objects.push_back(Object);
 }
 
-void HittableList::ECSAdd(const SphereObjectData& Data)
+void HittableList::VAddSphere(const SphereObjectData& Data)
 {
-	m_SphereTransforms.SphereCenters.push_back(Data.Center);
-	m_SphereTransforms.SphereRadius.push_back(Data.Radius);
+	m_SphereTransforms.TransformData.emplace_back(Data.Center, Data.Radius);
 	m_SphereMaterials.SphereMaterials.push_back(Data.Material);
 }

@@ -6,15 +6,20 @@
 
 class Material;
 
+//A(hopefully) well-aligned struct that packs all the transform data of a single sphere
+struct SphereTransformData
+{
+	Vector3D SphereCenter;
+	float SphereRadius;
+};
+
 struct SphereTransformComponent
 {
 	SphereTransformComponent()
 	{
-		SphereCenters.reserve(10);
-		SphereRadius.reserve(10);
+		TransformData.reserve(10);
 	}
-	std::vector<Vector3D> SphereCenters;
-	std::vector<float> SphereRadius;
+	std::vector<SphereTransformData> TransformData;
 };
 
 struct SphereMaterialComponent
@@ -42,7 +47,7 @@ public:
 
 	void Clear();
 	void Add(std::shared_ptr<Hittable> Object);
-	void ECSAdd(const SphereObjectData& Data);
+	void VAddSphere(const SphereObjectData& Data);
 
 
 private:
