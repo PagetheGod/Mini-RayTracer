@@ -109,6 +109,13 @@ Vector3D Vector3D::RandomUnitOnHemiSphere(const Vector3D& Normal)
 	return -Candidate;
 }
 
+//Generate a reflected vector according to an incoming vector V, and a hit point surface noraml Normal
+//It's basically V + 2b, where b = V's projection onto Normal x Normal(unit). But since V is pointing towards the surface we need to negate b
+Vector3D Vector3D::Reflect(const Vector3D& V, const Vector3D& Normal)
+{
+	return V - 2.f * V.Dot(Normal) * Normal;
+}
+
 std::ostream& operator<<(std::ostream& OutFileStream, const Vector3D& Vector)
 {
 	return OutFileStream << Vector.X << ' ' << Vector.Y << ' ' << Vector.Z;

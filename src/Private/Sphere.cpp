@@ -7,7 +7,7 @@ Sphere::Sphere(const Point3D& InCenter, const float InRadius) : m_Center(InCente
 
 bool Sphere::Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord)
 {
-	//A simple test function to do ray sphere intersection
+	//A simple function to do ray sphere intersection
 	Vector3D RayDir = R.Direction();
 	Point3D RayOrigin = R.Origin();
 	Vector3D RayOriToCenter = m_Center - RayOrigin;
@@ -48,8 +48,7 @@ bool Sphere::Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord)
 	OutHitRecord.t = Root;
 	Vector3D OutwardNormal = (OutHitRecord.HitPoint - m_Center) / m_Radius;
 	Hittable::SetFaceNormal(R, OutwardNormal, OutHitRecord);
-
-
+	OutHitRecord.HitMaterial = m_Material;
 
 	return true;
 }

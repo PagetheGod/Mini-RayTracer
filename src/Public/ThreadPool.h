@@ -15,12 +15,18 @@
 * 1. Changed the std::result_of to std::invoke_result (in SubmitTask) because the former was deprecated in C++ 17
 * 2. Added logics in the constructor to allow user(which is myself) to choose whether they want to specify a custom thread count.
 * 3. Added logics in the constructor to cap our max worker thread counts at 3/4 the user's concurrency
+* 4. Getter to ask whether the thread pool had stopped
 */
 class VThreadPool
 {
 public:
 	VThreadPool(size_t NumThreads = 2, bool IsUsingCustomThreadCount = false);
 	~VThreadPool();
+
+	bool HasStopped() const
+	{
+		return m_HasStopped;
+	}
 
 	/*
 	* This part is where the flexibility comes in. Use a template coupled with future so we can query the result of an async task

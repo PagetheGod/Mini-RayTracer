@@ -6,6 +6,7 @@
 class Ray
 {
 public:
+	Ray() : m_Origin(Vector3D(0.f, 0.f, 0.f)), m_Direction(Vector3D(0.f, 0.f, 0.f)) {}
 	Ray(const Point3D& Origin, const Vector3D Direction);
 	const Point3D& Origin() const { return m_Origin; }
 	const Vector3D& Direction() const { return m_Direction; }

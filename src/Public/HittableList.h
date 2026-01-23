@@ -41,10 +41,12 @@ struct SphereObjectData
 class HittableList : public Hittable
 {
 public:
-	HittableList() = default;
+	HittableList();
 	HittableList(std::shared_ptr<Hittable> Object);
 	virtual bool Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord) override;
-
+	//This functions uses the sphere data arrays in the hittablelist class to perform hit detection. Potentially bad name
+	bool VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord);
+	bool VSphereHit(const Ray& R, Interval HitInterval, const Vector3D& Center, const float Radius, HitRecord& OutHitRecord);
 	void Clear();
 	void Add(std::shared_ptr<Hittable> Object);
 	void VAddSphere(const SphereObjectData& Data);
@@ -54,4 +56,5 @@ private:
 	std::vector<std::shared_ptr<Hittable>> m_Objects;
 	SphereTransformComponent m_SphereTransforms;
 	SphereMaterialComponent m_SphereMaterials;
+	size_t m_NumObjects = 0;
 };

@@ -2,6 +2,9 @@
 
 #include "HittableList.h"
 
+
+#define USEBULKHIT 0
+
 class Camera
 {
 public:

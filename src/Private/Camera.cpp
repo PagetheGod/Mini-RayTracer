@@ -1,4 +1,5 @@
 #include "../Public/Camera.h"
+#include "../Public/Material.h"
 #include <stack>
 
 //Initialize camera parameters and delta U,V
@@ -50,24 +51,51 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 	Ray CurrentRay = R;
 	for (int i = 0; i < m_MaxDepth; i++)
 	{
-		if (World.Hit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord))
+
+		if (USEBULKHIT)
 		{
-			/*
-			* Lambertian reflection - light is more likely to bounce in directions close to normal
-			* So we add a random unit vector to the normal. To get a random bounce on the unit tangent sphere
-			*/
-			Vector3D DiffuseDirection = Vector3D::RandomUnitVector() + TempHitRecord.HitNormal;
-			CurrentRay = Ray(TempHitRecord.HitPoint, DiffuseDirection);
+			if (World.Hit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord))
+			{
+				/*
+				* Lambertian reflection - light is more likely to bounce in directions close to normal
+				* So we add a random unit vector to the normal. To get a random bounce on the unit tangent sphere
+				*/
+				Ray ScatteredRay;
+				Color Attenuation;
+				Vector3D ScatterDirection = TempHitRecord.HitMaterial.lock()->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay);
+				CurrentRay = Ray(TempHitRecord.HitPoint, ScatterDirection);
+			}
+			else
+			{
+				Vector3D UnitDirection = CurrentRay.Direction().Normalize();
+				float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
+				PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
+				return std::powf(0.5f, i) * PixelColor;
+			}
 		}
 		else
 		{
-			Vector3D UnitDirection = CurrentRay.Direction().Normalize();
-			float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-			PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
-			return std::powf(0.5f, i) * PixelColor;
+			if (World.VBulkHit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord))
+			{
+				/*
+				* Lambertian reflection - light is more likely to bounce in directions close to normal
+				* So we add a random unit vector to the normal. To get a random bounce on the unit tangent sphere
+				*/
+				Ray ScatteredRay;
+				Color Attenuation;
+				Vector3D ScatterDirection = TempHitRecord.HitMaterial.lock()->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay);
+				CurrentRay = Ray(TempHitRecord.HitPoint, ScatterDirection);
+			}
+			else
+			{
+				Vector3D UnitDirection = CurrentRay.Direction().Normalize();
+				float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
+				PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
+				return std::powf(0.5f, i) * PixelColor;
+			}
 		}
+		
 	}
-
 	/*
 	std::vector<Ray> Cont;
 	Cont.reserve(m_MaxDepth);

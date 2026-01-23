@@ -11,12 +11,16 @@
 * 2.2 -> have the normals always point against the ray, and store whether we hit the object from inside/outside at the time of geometric calculations
 * 2. cont, in this project, we have more materials than complex geometries, so opt for storing the information at geometry
 */
+
+class Material;
+
 struct HitRecord
 {
 	Point3D HitPoint;
 	Vector3D HitNormal;
 	float t;
 	bool IsFrontFace;
+	std::weak_ptr<Material> HitMaterial;
 };
 
 //Abstract class representing a hittable object in the scene. I do not like the idea of this abstract class, maybe switch to something else later
@@ -25,6 +29,7 @@ class Hittable
 public:
 	virtual ~Hittable() = default;
 	virtual bool Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord) = 0;
+	
 	static void SetFaceNormal(const Ray& R, const Vector3D& OutwardNormal, HitRecord& OutHitRecord);
 };
 

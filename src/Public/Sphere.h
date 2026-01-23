@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Hittable.h"
+#include "HittableList.h"
 
 class Sphere : public Hittable
 {
@@ -11,4 +11,5 @@ public:
 private:
 	Point3D m_Center;
 	float m_Radius;
+	std::shared_ptr<Material> m_Material;
 };

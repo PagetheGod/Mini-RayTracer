@@ -1,4 +1,4 @@
-#include "../Public/Lambertian.h"
+#include "../Public/SubMaterials.h"
 
 bool Lambertian::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutAttenuation, Ray& OutScattered)
 {
@@ -8,6 +8,15 @@ bool Lambertian::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutA
 	{
 		ScatterDirection = InHitRecord.HitNormal;
 	}
+	OutScattered = Ray(InHitRecord.HitPoint, ScatterDirection);
+	OutAttenuation = m_Albedo;
+
+	return true;
+}
+
+bool Metal::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutAttenuation, Ray& OutScattered)
+{
+	Vector3D ScatterDirection = Vector3D::Reflect(R.Direction(), InHitRecord.HitNormal);
 	OutScattered = Ray(InHitRecord.HitPoint, ScatterDirection);
 	OutAttenuation = m_Albedo;
 

@@ -90,8 +90,6 @@ void SoftwareRenderer::RenderPPM()
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
 
 	m_OutFileStream << "P3\n" << m_Width << ' ' << m_Height << "\n255\n";
-
-
 	for (int i = 0; i < m_Height; i++)
 	{
 		for (int j = 0; j < m_Width; j++)
@@ -131,7 +129,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 	//Add spheres into the world.
 	//I do not like the idea of an array of shared pointers. Potential pointer chasing and cache misses once we start adding more objects to the world
 	//Might change how we store the hittable data once we are done with the software rendering logic(considering SoA?)
-	m_World = new HittableList(std::make_shared<Sphere>(Sphere(Point3D(0.f, 0.f, -1.f), 0.5f)));
+	m_World = new HittableList(std::make_shared<Sphere>(Point3D(0.f, 0.f, -1.f), 0.5f));
 	m_World->Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, -100.5f, -1.f), 100.f)));
 
 
