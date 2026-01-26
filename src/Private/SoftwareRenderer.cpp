@@ -1,6 +1,7 @@
 #include "../Public/SoftwareRenderer.h"
 #include "../Public/D2D1Class.h"
 #include "../Public/Timer.h"
+#include "../Public/SubMaterials.h"
 
 SoftwareRenderer::SoftwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()), 
 m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
@@ -126,11 +127,27 @@ void SoftwareRenderer::RenderFrameBuffer()
 	double RenderTime = 0.0;
 	VTimer RenderTimer;
 	RenderTimer.Start();
+
+	//Create the materials
+	std::shared_ptr <Lambertian> GroundMat = std::make_shared<Lambertian>(Color(0.8f, 0.8f, 0.f));
+	std::shared_ptr <Lambertian> CenterSphereMat = std::make_shared<Lambertian>(Color(0.1f, 0.2f, 0.5f));
+	std::shared_ptr <Metal> LeftSphereMat = std::make_shared<Metal>(Color(0.7f, 0.7f, 0.7f), 0.05f);
+	std::shared_ptr <Metal> RightSphereMat = std::make_shared<Metal>(Color(0.2f, 0.6f, 0.4f), 0.05f);
 	//Add spheres into the world.
 	//I do not like the idea of an array of shared pointers. Potential pointer chasing and cache misses once we start adding more objects to the world
 	//Might change how we store the hittable data once we are done with the software rendering logic(considering SoA?)
-	m_World = new HittableList(std::make_shared<Sphere>(Point3D(0.f, 0.f, -1.f), 0.5f));
-	m_World->Add(std::make_shared<Sphere>(Sphere(Point3D(0.f, -100.5f, -1.f), 100.f)));
+	if (USEBULKHIT)
+	{
+
+	}
+	else
+	{
+		m_World = new HittableList(std::make_shared<Sphere>(Point3D(0.f, 0.f, -1.2f), 0.5f, CenterSphereMat));//Center
+		m_World->Add(std::make_shared<Sphere>(Point3D(0.f, -100.5f, -1.f), 100.f, GroundMat));//Ground sphere
+		m_World->Add(std::make_shared<Sphere>(Point3D(-1.f, 0.f, -1.f), 0.5f, LeftSphereMat));//Left
+		m_World->Add(std::make_shared<Sphere>(Point3D(1.f, 0.f, -1.f), 0.5f, RightSphereMat));//Right
+	}
+	
 
 
 	std::vector<std::future<int>> Futures;

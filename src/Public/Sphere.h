@@ -5,7 +5,7 @@
 class Sphere : public Hittable
 {
 public:
-	Sphere(const Point3D& InCenter, const float InRadius);
+	Sphere(const Point3D& InCenter, const float InRadius, std::shared_ptr<Material> InMaterial);
 	virtual bool Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord) override;
 
 private:

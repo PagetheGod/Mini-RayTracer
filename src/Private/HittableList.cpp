@@ -22,11 +22,10 @@ bool HittableList::Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitReco
 
 	for (const std::shared_ptr<Hittable>& Object : m_Objects)
 	{
-		if (Object->Hit(R, Interval(HitInterval.Min, ClosestSoFar), ClosestHitRecord))
+		if (Object->Hit(R, Interval(HitInterval.Min, ClosestSoFar), OutHitRecord))
 		{
 			HasHit = true;
-			ClosestSoFar = ClosestHitRecord.t;
-			OutHitRecord = ClosestHitRecord;
+			ClosestSoFar = OutHitRecord.t;
 		}
 	}
 
@@ -45,9 +44,8 @@ bool HittableList::VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHi
 		if (VSphereHit(R, HitInterval, m_SphereTransforms.TransformData[i].SphereCenter, m_SphereTransforms.TransformData[i].SphereRadius, OutHitRecord))
 		{
 			HasHit = true;
-			ClosestSoFar = ClosestHitRecord.t;
-			ClosestHitRecord.HitMaterial = m_SphereMaterials.SphereMaterials[i];
-			OutHitRecord = ClosestHitRecord;
+			ClosestSoFar = OutHitRecord.t;
+			OutHitRecord.HitMaterial = m_SphereMaterials.SphereMaterials[i];
 		}
 	}
 

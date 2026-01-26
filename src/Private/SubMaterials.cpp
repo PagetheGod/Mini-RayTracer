@@ -17,8 +17,8 @@ bool Lambertian::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutA
 bool Metal::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutAttenuation, Ray& OutScattered)
 {
 	Vector3D ScatterDirection = Vector3D::Reflect(R.Direction(), InHitRecord.HitNormal);
+	ScatterDirection = ScatterDirection.Normalize() + m_Fuzz * Vector3D::RandomUnitVector();
 	OutScattered = Ray(InHitRecord.HitPoint, ScatterDirection);
 	OutAttenuation = m_Albedo;
-
-	return true;
+	return OutScattered.Direction().Dot(InHitRecord.HitNormal) > 0.f;
 }

@@ -49,10 +49,11 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 	Color PixelColor = Color{ 0.f, 0.f, 0.f };
 	HitRecord TempHitRecord;
 	Ray CurrentRay = R;
+	Color TotalAttenuation = Color{1.f, 1.f, 1.f};
 	for (int i = 0; i < m_MaxDepth; i++)
 	{
 
-		if (USEBULKHIT)
+		if (!USEBULKHIT)
 		{
 			if (World.Hit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord))
 			{
@@ -62,15 +63,22 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 				*/
 				Ray ScatteredRay;
 				Color Attenuation;
-				Vector3D ScatterDirection = TempHitRecord.HitMaterial.lock()->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay);
-				CurrentRay = Ray(TempHitRecord.HitPoint, ScatterDirection);
+				if (TempHitRecord.HitMaterial.lock()->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay))
+				{
+					CurrentRay = ScatteredRay;
+					TotalAttenuation = TotalAttenuation * Attenuation;
+				}
+				else
+				{
+					return Color(0.f, 0.f, 0.f);
+				}
 			}
 			else
 			{
 				Vector3D UnitDirection = CurrentRay.Direction().Normalize();
 				float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
 				PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
-				return std::powf(0.5f, i) * PixelColor;
+				return TotalAttenuation * PixelColor;
 			}
 		}
 		else
@@ -83,15 +91,21 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 				*/
 				Ray ScatteredRay;
 				Color Attenuation;
-				Vector3D ScatterDirection = TempHitRecord.HitMaterial.lock()->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay);
-				CurrentRay = Ray(TempHitRecord.HitPoint, ScatterDirection);
+				if (TempHitRecord.HitMaterial.lock()->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay))
+				{
+					CurrentRay = ScatteredRay;
+				}
+				else
+				{
+					return Color(0.f, 0.f, 0.f);
+				}
 			}
 			else
 			{
 				Vector3D UnitDirection = CurrentRay.Direction().Normalize();
 				float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
 				PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
-				return std::powf(0.5f, i) * PixelColor;
+				return TotalAttenuation * PixelColor;
 			}
 		}
 		
