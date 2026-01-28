@@ -28,3 +28,15 @@ private:
 	Color m_Albedo;
 	float m_Fuzz;
 };
+
+class Dielectric : public Material
+{
+public:
+	//Refractive material
+	Dielectric(const float RefractionIndex) : m_RefractionIndex(RefractionIndex) {}
+	virtual bool Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutAttenuation, Ray& OutScattered) override;
+private:
+	//Kinda bad name here. Albedo in this case is used to calculate how much we attenuate(absorb) each color component
+	//In other words, it's the "opposite" of color, so it's basically color, just used in the reverse way
+	float m_RefractionIndex;
+};

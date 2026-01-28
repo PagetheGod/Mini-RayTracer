@@ -42,7 +42,7 @@ private:
 	Vector3D m_DeltaU;
 	Vector3D m_DeltaV;
 	Camera m_Camera;
-	HittableList* m_World;
+	std::unique_ptr<HittableList> m_World;
 	std::ofstream m_OutFileStream;
 	HWND m_hWnd;
 	unsigned char* m_FrameBuffer;

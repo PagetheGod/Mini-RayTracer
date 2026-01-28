@@ -131,18 +131,22 @@ void SoftwareRenderer::RenderFrameBuffer()
 	//Create the materials
 	std::shared_ptr <Lambertian> GroundMat = std::make_shared<Lambertian>(Color(0.8f, 0.8f, 0.f));
 	std::shared_ptr <Lambertian> CenterSphereMat = std::make_shared<Lambertian>(Color(0.1f, 0.2f, 0.5f));
-	std::shared_ptr <Metal> LeftSphereMat = std::make_shared<Metal>(Color(0.7f, 0.7f, 0.7f), 0.05f);
+	std::shared_ptr <Dielectric> LeftSphereMat = std::make_shared<Dielectric>(1.f / 1.33f);
 	std::shared_ptr <Metal> RightSphereMat = std::make_shared<Metal>(Color(0.2f, 0.6f, 0.4f), 0.05f);
 	//Add spheres into the world.
 	//I do not like the idea of an array of shared pointers. Potential pointer chasing and cache misses once we start adding more objects to the world
 	//Might change how we store the hittable data once we are done with the software rendering logic(considering SoA?)
 	if (USEBULKHIT)
 	{
-
+		m_World = std::make_unique<HittableList>(); 
+		m_World->VAddSphere(SphereObjectData(Point3D(0.f, 0.f, -1.2f), 0.5f, CenterSphereMat));//Center
+		m_World->VAddSphere(SphereObjectData(Point3D(0.f, -100.5f, -1.f), 100.f, GroundMat));//Ground sphere
+		m_World->VAddSphere(SphereObjectData(Point3D(-1.f, 0.f, -1.f), 0.5f, LeftSphereMat));//Left
+		m_World->VAddSphere(SphereObjectData(Point3D(1.f, 0.f, -1.f), 0.5f, RightSphereMat));//Right
 	}
 	else
 	{
-		m_World = new HittableList(std::make_shared<Sphere>(Point3D(0.f, 0.f, -1.2f), 0.5f, CenterSphereMat));//Center
+		m_World = std::make_unique<HittableList>(std::make_shared<Sphere>(Point3D(0.f, 0.f, -1.2f), 0.5f, CenterSphereMat));//Center
 		m_World->Add(std::make_shared<Sphere>(Point3D(0.f, -100.5f, -1.f), 100.f, GroundMat));//Ground sphere
 		m_World->Add(std::make_shared<Sphere>(Point3D(-1.f, 0.f, -1.f), 0.5f, LeftSphereMat));//Left
 		m_World->Add(std::make_shared<Sphere>(Point3D(1.f, 0.f, -1.f), 0.5f, RightSphereMat));//Right
@@ -245,7 +249,6 @@ void SoftwareRenderer::Shutdown()
 		m_D2D1 = nullptr;
 	}
 	delete[] m_FrameBuffer;
-	delete m_World;
 	m_OutFileStream.close();
 }
 

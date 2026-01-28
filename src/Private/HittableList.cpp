@@ -41,14 +41,13 @@ bool HittableList::VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHi
 
 	for (size_t i = 0; i < m_NumObjects; i++)
 	{
-		if (VSphereHit(R, HitInterval, m_SphereTransforms.TransformData[i].SphereCenter, m_SphereTransforms.TransformData[i].SphereRadius, OutHitRecord))
+		if (VSphereHit(R, Interval(HitInterval.Min, ClosestSoFar), m_SphereTransforms.TransformData[i].SphereCenter, m_SphereTransforms.TransformData[i].SphereRadius, OutHitRecord))
 		{
 			HasHit = true;
 			ClosestSoFar = OutHitRecord.t;
 			OutHitRecord.HitMaterial = m_SphereMaterials.SphereMaterials[i];
 		}
 	}
-
 
 	return HasHit;
 }
@@ -114,4 +113,5 @@ void HittableList::VAddSphere(const SphereObjectData& Data)
 {
 	m_SphereTransforms.TransformData.emplace_back(Data.Center, Data.Radius);
 	m_SphereMaterials.SphereMaterials.push_back(Data.Material);
+	m_NumObjects++;
 }

@@ -116,6 +116,17 @@ Vector3D Vector3D::Reflect(const Vector3D& V, const Vector3D& Normal)
 	return V - 2.f * V.Dot(Normal) * Normal;
 }
 
+//Generate a refracted vector according to the incoming vector InVector, surface normal, and the RelativeRI
+//The relative RI is the relative refraction index, obtained by RI(In)/RI(Out)
+Vector3D Vector3D::Refract(const Vector3D& InVector, const Vector3D& Normal, const float RelativeRI)
+{
+	float CosTheta = std::min(-InVector.Dot(Normal), 1.f);
+	
+	const Vector3D OutPerp = RelativeRI * (InVector + CosTheta * Normal);
+	const Vector3D OutPara = -std::sqrt(std::abs(1.f - OutPerp.LengthSquared())) * Normal;
+	return OutPerp + OutPara;
+}
+
 std::ostream& operator<<(std::ostream& OutFileStream, const Vector3D& Vector)
 {
 	return OutFileStream << Vector.X << ' ' << Vector.Y << ' ' << Vector.Z;
