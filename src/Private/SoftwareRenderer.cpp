@@ -6,9 +6,11 @@
 SoftwareRenderer::SoftwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()), 
 m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
 {
-	m_ViewportHeight = 2.f;
-	m_ViewportWidth = m_ViewportHeight * ((float)m_Width / (float)m_Height);
+
 }
+
+//Some of the viewport, fov, and aspect ratio logics can be moved into the camera class
+//But for this project such set up is fine. Or maybe we should move these logic into the constructor for RAII
 bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 {
 	bool Result = false;
@@ -24,11 +26,17 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 
 	//Remember that our camera center is also the center of our coordinate system
 	m_Camera = Camera();
-	m_Camera.SetSampleCount(100);
-	m_Camera.SetMaxDepth(25);
+	m_Camera.SetSampleCount(50);
+	m_Camera.SetMaxDepth(20);
 
-	m_ViewportU = Vector3D(m_ViewportWidth, 0.f, 0.f);
-	m_ViewportV = Vector3D(0.f, -m_ViewportHeight, 0.f);//This is negative because the viewport Y is inverted compared to right hand coordinate system
+	float VFovAngle = Utility::DegreeToRadian(m_Camera.VerticalFOV);
+	float h = std::tan(VFovAngle / 2.f);
+	m_ViewportHeight = 2.f * h * m_Camera.FocalLength;
+	m_ViewportWidth = m_ViewportHeight * ((float)m_Width / (float)m_Height);
+	
+	
+	m_ViewportU = m_ViewportWidth * m_Camera.CameraU;
+	m_ViewportV = m_ViewportHeight *  (-m_Camera.CameraV);//This is negative because the viewport Y is inverted compared to right hand coordinate system
 	m_DeltaU = m_ViewportU / (float)(m_Width);
 	m_DeltaV = m_ViewportV / (float)(m_Height);
 
@@ -122,16 +130,22 @@ void SoftwareRenderer::RenderFrameBuffer()
 	* 3. Step 2 means we need to add half of the delta U and V to get to the first pixel location
 	*/
 	Point3D CameraCenter = m_Camera.CameraCenter;
-	Vector3D ViewportUpperLeft = CameraCenter - Vector3D(0.f, 0.f, m_Camera.FocalLength) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
+	Vector3D ViewportUpperLeft = CameraCenter - m_Camera.CameraW * m_Camera.FocalLength - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
 	double RenderTime = 0.0;
 	VTimer RenderTimer;
 	RenderTimer.Start();
 
 	//Create the materials
+	/*
+	* Note on the calculation of RI for the glass sphere and the bubble. The glass is straightforward, it's just 1.5
+	* For the bubble, we need to remember that the RI of a surface can be interpreted as the RI of itself divided by the enclosing object
+	* Therefore, we have 1.f(air bubble) / 1.5f(glass layer)
+	*/
 	std::shared_ptr <Lambertian> GroundMat = std::make_shared<Lambertian>(Color(0.8f, 0.8f, 0.f));
 	std::shared_ptr <Lambertian> CenterSphereMat = std::make_shared<Lambertian>(Color(0.1f, 0.2f, 0.5f));
-	std::shared_ptr <Dielectric> LeftSphereMat = std::make_shared<Dielectric>(1.f / 1.33f);
+	std::shared_ptr <Dielectric> LeftSphereMat = std::make_shared<Dielectric>(1.5f);//The outer glass of the glass sphere
+	std::shared_ptr <Dielectric> LeftBubbleMat = std::make_shared<Dielectric>(1.f / 1.5f);//The bubble inside the glass sphere
 	std::shared_ptr <Metal> RightSphereMat = std::make_shared<Metal>(Color(0.2f, 0.6f, 0.4f), 0.05f);
 	//Add spheres into the world.
 	//I do not like the idea of an array of shared pointers. Potential pointer chasing and cache misses once we start adding more objects to the world
@@ -141,7 +155,8 @@ void SoftwareRenderer::RenderFrameBuffer()
 		m_World = std::make_unique<HittableList>(); 
 		m_World->VAddSphere(SphereObjectData(Point3D(0.f, 0.f, -1.2f), 0.5f, CenterSphereMat));//Center
 		m_World->VAddSphere(SphereObjectData(Point3D(0.f, -100.5f, -1.f), 100.f, GroundMat));//Ground sphere
-		m_World->VAddSphere(SphereObjectData(Point3D(-1.f, 0.f, -1.f), 0.5f, LeftSphereMat));//Left
+		m_World->VAddSphere(SphereObjectData(Point3D(-1.f, 0.f, -1.f), 0.5f, LeftSphereMat));//Left glass
+		m_World->VAddSphere(SphereObjectData(Point3D(-1.f, 0.f, -1.f), 0.4f, LeftBubbleMat));//Air bubble inside the glass sphere
 		m_World->VAddSphere(SphereObjectData(Point3D(1.f, 0.f, -1.f), 0.5f, RightSphereMat));//Right
 	}
 	else
@@ -149,6 +164,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 		m_World = std::make_unique<HittableList>(std::make_shared<Sphere>(Point3D(0.f, 0.f, -1.2f), 0.5f, CenterSphereMat));//Center
 		m_World->Add(std::make_shared<Sphere>(Point3D(0.f, -100.5f, -1.f), 100.f, GroundMat));//Ground sphere
 		m_World->Add(std::make_shared<Sphere>(Point3D(-1.f, 0.f, -1.f), 0.5f, LeftSphereMat));//Left
+		m_World->Add(std::make_shared<Sphere>(Point3D(-1.f, 0.f, -1.f), 0.4f, LeftBubbleMat));//Air bubble inside the glass sphere
 		m_World->Add(std::make_shared<Sphere>(Point3D(1.f, 0.f, -1.f), 0.5f, RightSphereMat));//Right
 	}
 	

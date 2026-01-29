@@ -4,9 +4,14 @@
 
 //Initialize camera parameters and delta U,V
 //The camera center is also the origin of our coordinate system
-Camera::Camera(Point3D InCameraCenter, float InFocalLength, int InSamplePerPixel) : CameraCenter(InCameraCenter), FocalLength(InFocalLength), m_SamplesPerPixel(InSamplePerPixel)
+Camera::Camera(Point3D InCameraCenter, float InFocalLength, int InSamplePerPixel, float InVerticalFOV) : CameraCenter(InCameraCenter), FocalLength(InFocalLength),
+VerticalFOV(InVerticalFOV), m_SamplesPerPixel(InSamplePerPixel)
 {
+	FocalLength = (LookAt - CameraCenter).Length();
 
+	CameraW = (CameraCenter - LookAt).Normalize();
+	CameraU = Up.Cross(CameraW).Normalize();
+	CameraV = CameraW.Cross(CameraU);
 }
 Color Camera::CalculateHitColor(HittableList& World, Point3D PixelLocation, Vector3D PixelDeltaU, Vector3D PixelDeltaV) const
 {

@@ -35,8 +35,13 @@ public:
 	//Refractive material
 	Dielectric(const float RefractionIndex) : m_RefractionIndex(RefractionIndex) {}
 	virtual bool Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutAttenuation, Ray& OutScattered) override;
+	
+	//Schlick Approximation for reflectance, this is used to approximate materials like glass, which can have varying degree of reflectance based on viewing angle
+	float Reflectance(float Cosine, float RelativeRI);
+
 private:
 	//Kinda bad name here. Albedo in this case is used to calculate how much we attenuate(absorb) each color component
 	//In other words, it's the "opposite" of color, so it's basically color, just used in the reverse way
 	float m_RefractionIndex;
+	
 };

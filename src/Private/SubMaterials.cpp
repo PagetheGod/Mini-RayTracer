@@ -39,7 +39,7 @@ bool Dielectric::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutA
 	float SinTheta = std::sqrt(1 - CosTheta * CosTheta);
 	bool CanRefract = RelativeRI * SinTheta <= 1.f;
 	Vector3D ScatteredDirection; 
-	if (CanRefract)
+	if (CanRefract && Reflectance(CosTheta, RelativeRI) <= Utility::RandomFloat())
 	{
 		ScatteredDirection = Vector3D::Refract(UnitDirection, InHitRecord.HitNormal, RelativeRI);
 	}
@@ -51,4 +51,12 @@ bool Dielectric::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutA
 	OutScattered = Ray(InHitRecord.HitPoint, ScatteredDirection);
 
 	return true;
+}
+
+float Dielectric::Reflectance(float Cosine, float RelativeRI)
+{
+	float R0 = (1.f - RelativeRI) / (1.f + RelativeRI);
+	R0 = R0 * R0;
+
+	return R0 + (1.f - R0) * std::pow(1.f - Cosine, 5);
 }
