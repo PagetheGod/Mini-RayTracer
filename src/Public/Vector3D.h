@@ -32,6 +32,7 @@ public:
 	static Vector3D RandomVector(float Min, float Max);
 	static Vector3D RandomUnitVector();
 	static Vector3D RandomUnitOnHemiSphere(const Vector3D& Normal);
+	static Vector3D RandomOnUnitDisk();
 	static Vector3D Reflect(const Vector3D& V, const Vector3D& Normal);
 	static Vector3D Refract(const Vector3D& InVector, const Vector3D& Normal, const float RelativeRI);
 

@@ -109,6 +109,19 @@ Vector3D Vector3D::RandomUnitOnHemiSphere(const Vector3D& Normal)
 	return -Candidate;
 }
 
+//Generate a random point on a unit disk. Used to implement defocus blur
+Vector3D Vector3D::RandomOnUnitDisk()
+{
+	while (true)
+	{
+		Vector3D Point = Vector3D(Utility::RandomFloat(-1.f, 1.f), Utility::RandomFloat(-1.f, 1.f), 0.f);
+		if (Point.LengthSquared() <= 1.f)
+		{
+			return Point;
+		}
+	}
+}
+
 //Generate a reflected vector according to an incoming vector V, and a hit point surface noraml Normal
 //It's basically V + 2b, where b = V's projection onto Normal x Normal(unit). But since V is pointing towards the surface we need to negate b
 Vector3D Vector3D::Reflect(const Vector3D& V, const Vector3D& Normal)

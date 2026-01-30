@@ -26,12 +26,12 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 
 	//Remember that our camera center is also the center of our coordinate system
 	m_Camera = Camera();
-	m_Camera.SetSampleCount(50);
+	m_Camera.SetSampleCount(100);
 	m_Camera.SetMaxDepth(20);
 
 	float VFovAngle = Utility::DegreeToRadian(m_Camera.VerticalFOV);
 	float h = std::tan(VFovAngle / 2.f);
-	m_ViewportHeight = 2.f * h * m_Camera.FocalLength;
+	m_ViewportHeight = 2.f * h * m_Camera.FocusDistance;
 	m_ViewportWidth = m_ViewportHeight * ((float)m_Width / (float)m_Height);
 	
 	
@@ -95,7 +95,7 @@ void SoftwareRenderer::RenderPPM()
 	* 3. Step 2 means we need to add half of the delta U and V to get to the first pixel location
 	*/
 	Point3D CameraCenter = m_Camera.CameraCenter;
-	Vector3D ViewportUpperLeft = CameraCenter - Vector3D(0.f, 0.f, m_Camera.FocalLength) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
+	Vector3D ViewportUpperLeft = CameraCenter - Vector3D(0.f, 0.f, m_Camera.FocusDistance) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
 
 	m_OutFileStream << "P3\n" << m_Width << ' ' << m_Height << "\n255\n";
@@ -142,7 +142,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 	* For the bubble, we need to remember that the RI of a surface can be interpreted as the RI of itself divided by the enclosing object
 	* Therefore, we have 1.f(air bubble) / 1.5f(glass layer)
 	*/
-	std::shared_ptr <Lambertian> GroundMat = std::make_shared<Lambertian>(Color(0.8f, 0.8f, 0.f));
+	std::shared_ptr <Lambertian> GroundMat = std::make_shared<Lambertian>(Color(0.5f, 0.5f, 0.5f));
 	std::shared_ptr <Lambertian> CenterSphereMat = std::make_shared<Lambertian>(Color(0.1f, 0.2f, 0.5f));
 	std::shared_ptr <Dielectric> LeftSphereMat = std::make_shared<Dielectric>(1.5f);//The outer glass of the glass sphere
 	std::shared_ptr <Dielectric> LeftBubbleMat = std::make_shared<Dielectric>(1.f / 1.5f);//The bubble inside the glass sphere
@@ -266,5 +266,55 @@ void SoftwareRenderer::Shutdown()
 	}
 	delete[] m_FrameBuffer;
 	m_OutFileStream.close();
+}
+
+void SoftwareRenderer::CreateWorld()
+{
+	if (USEBULKHIT)
+	{
+
+	}
+	else
+	{
+		for (int a = -11; a < 11; a++) {
+			for (int b = -11; b < 11; b++) {
+				float ChooseMat = Utility::RandomFloat();
+				Point3D SphereCenter(a + 0.9f * Utility::RandomFloat(), 0.2f, b + 0.9f * Utility::RandomFloat());
+
+				if ((SphereCenter - Point3D(4.f, 0.2f, 0.f)).Length() > 0.9f) {
+					std::shared_ptr<Material> sphere_material;
+
+					if (choose_mat < 0.8) {
+						// diffuse
+						Color albedo = Color::RandomVector() * Color::RandomVector();
+						sphere_material = make_shared<lambertian>(albedo);
+						m_World.add(make_shared<sphere>(center, 0.2, sphere_material));
+					}
+					else if (choose_mat < 0.95) {
+						// metal
+						Color albedo = Color::RandomVector();
+						float fuzz = Utility::RandomFloat(0.f, 0.5f);
+						sphere_material = make_shared<metal>(albedo, fuzz);
+						m_World.add(make_shared<sphere>(SphereCenter, 0.2, sphere_material));
+					}
+					else {
+						// glass
+						sphere_material = make_shared<dielectric>(1.5);
+						m_World.add(make_shared<sphere>(SphereCenter, 0.2, sphere_material));
+					}
+				}
+			}
+		}
+
+		auto material1 = make_shared<dielectric>(1.5);
+		m_World.add(make_shared<sphere>(point3(0, 1, 0), 1.0, material1));
+
+		auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
+		m_World.add(make_shared<sphere>(point3(-4, 1, 0), 1.0, material2));
+
+		auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
+		m_World.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
+	}
+	
 }
 

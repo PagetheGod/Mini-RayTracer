@@ -12,6 +12,11 @@ VerticalFOV(InVerticalFOV), m_SamplesPerPixel(InSamplePerPixel)
 	CameraW = (CameraCenter - LookAt).Normalize();
 	CameraU = Up.Cross(CameraW).Normalize();
 	CameraV = CameraW.Cross(CameraU);
+
+	float DefocusRadius = FocusDistance * std::tan(Utility::DegreeToRadian(DefocusAngle / 2.f));
+	DefocusDiskU = DefocusRadius * CameraU;
+	DefocusDiskV = DefocusRadius * CameraV;
+
 }
 Color Camera::CalculateHitColor(HittableList& World, Point3D PixelLocation, Vector3D PixelDeltaU, Vector3D PixelDeltaV) const
 {
@@ -35,8 +40,10 @@ Ray Camera::SendRayToSample(Point3D PixelLocation, Vector3D PixelDeltaU, Vector3
 
 
 	Point3D PixelSample = PixelLocation + Offset.X * PixelDeltaU + Offset.Y * PixelDeltaV;
+	Point3D RayOrigin = DefocusAngle <= 0.f ? CameraCenter : SampleDefocusDisk();
+	Vector3D RayDirection = PixelSample - RayOrigin;
 
-	return Ray(CameraCenter, PixelSample - CameraCenter);
+	return Ray(RayOrigin, RayDirection);
 }
 
 Vector3D Camera::SampleSquare() const
@@ -143,4 +150,10 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 	}*/
 
 	return Color{ 0.f, 0.f, 0.f };
+}
+
+Point3D Camera::SampleDefocusDisk() const
+{
+	Point3D Point = Vector3D::RandomOnUnitDisk();
+	return CameraCenter + Point.X * DefocusDiskU + Point.Y * DefocusDiskV;
 }

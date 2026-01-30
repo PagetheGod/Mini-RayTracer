@@ -30,7 +30,7 @@ public:
 	~SoftwareRenderer() = default;
 
 private:
-
+	void CreateWorld();
 private:
 	int m_Width;
 	int m_Height;
