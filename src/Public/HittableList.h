@@ -28,14 +28,14 @@ struct SphereMaterialComponent
 	{
 		SphereMaterials.reserve(10);
 	}
-	std::vector<std::weak_ptr<Material>> SphereMaterials;
+	std::vector<std::shared_ptr<Material>> SphereMaterials;
 };
 
 struct SphereObjectData
 {
 	Vector3D Center;
 	float Radius;
-	std::weak_ptr<Material> Material;
+	std::shared_ptr<Material> Material;
 };
 
 class HittableList : public Hittable

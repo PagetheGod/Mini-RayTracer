@@ -8,7 +8,7 @@
 class Camera
 {
 public:
-	Camera(Point3D InCameraCenter = Point3D(-2.f, 2.f, 1.f), float InFocalLength = 1.f, int InSamplePerPixel = 10, float InVerticalFOV = 60.f);
+	Camera(Point3D InCameraCenter = Point3D(13.f, 2.f, 3.f), float InFocalLength = 1.f, int InSamplePerPixel = 10, float InVerticalFOV = 20.f);
 	Color CalculateHitColor(HittableList& World, Point3D PixelLocation, Vector3D PixelDeltaU, Vector3D PixelDeltaV) const;
 	void SetSampleCount(int InSampleCount)
 	{
@@ -22,7 +22,7 @@ public:
 	//These variables can be set in the constructor, I just don't want to crowd the constructor with tons of parameters
 	//A simple way to solve it would be packing all these camera info into a struct so we can pass it around
 	Point3D CameraCenter;
-	Point3D LookAt = Point3D(13.f, 2.f, 3.f);
+	Point3D LookAt = Point3D(0.f, 0.f, 0.f);
 	Vector3D Up = Vector3D(0.f, 1.f, 0.f);
 	float FocalLength;
 	float VerticalFOV;

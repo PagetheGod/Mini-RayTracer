@@ -75,7 +75,7 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 				*/
 				Ray ScatteredRay;
 				Color Attenuation;
-				if (TempHitRecord.HitMaterial.lock()->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay))
+				if (TempHitRecord.HitMaterial->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay))
 				{
 					CurrentRay = ScatteredRay;
 					TotalAttenuation = TotalAttenuation * Attenuation;
@@ -103,7 +103,7 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 				*/
 				Ray ScatteredRay;
 				Color Attenuation;
-				if (TempHitRecord.HitMaterial.lock()->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay))
+				if (TempHitRecord.HitMaterial->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay))
 				{
 					CurrentRay = ScatteredRay;
 					TotalAttenuation = TotalAttenuation * Attenuation;

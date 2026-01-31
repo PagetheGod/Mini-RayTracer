@@ -20,7 +20,7 @@ struct HitRecord
 	Vector3D HitNormal;
 	float t;
 	bool IsFrontFace;
-	std::weak_ptr<Material> HitMaterial;
+	std::shared_ptr<Material> HitMaterial;
 };
 
 //Abstract class representing a hittable object in the scene. I do not like the idea of this abstract class, maybe switch to something else later
