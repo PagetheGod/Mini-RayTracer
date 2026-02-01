@@ -32,7 +32,7 @@ However, this project does differ from the original implementations in multiple 
 - **Multithreading & Performance**
   - Added multithreaded rendering using a thread pool. (Thread pool implementation is based on https://github.com/progschj/ThreadPool/blob/master/ThreadPool.h. Credits to the author)
   - Reduced render time by up to **80%** compared to the single-threaded implementation in the book.
-
+  - Used data-oriented design to store scene object data in cache-coherent structs and arrays. Reduced render time by up to **50%**.
 ---
 
 ## Technical Focus
