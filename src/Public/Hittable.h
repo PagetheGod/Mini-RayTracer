@@ -13,6 +13,8 @@
 */
 
 class Material;
+enum MaterialType;
+
 
 struct HitRecord
 {
@@ -21,6 +23,7 @@ struct HitRecord
 	float t;
 	bool IsFrontFace;
 	std::shared_ptr<Material> HitMaterial;
+	MaterialType VHitMaterial;
 };
 
 //Abstract class representing a hittable object in the scene. I do not like the idea of this abstract class, maybe switch to something else later

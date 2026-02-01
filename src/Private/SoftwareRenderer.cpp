@@ -1,7 +1,9 @@
 #include "../Public/SoftwareRenderer.h"
 #include "../Public/D2D1Class.h"
 #include "../Public/Timer.h"
+#include "../Public/VMaterial.h"
 #include "../Public/SubMaterials.h"
+
 
 SoftwareRenderer::SoftwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()), 
 m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
@@ -248,8 +250,8 @@ void SoftwareRenderer::CreateWorld()
 	if (USEBULKHIT)
 	{
 		m_World = std::make_unique<HittableList>();
-		std::shared_ptr<Material> GroundMat = std::make_shared<Lambertian>(Color(0.5f, 0.5f, 0.5f));
-		m_World->VAddSphere(SphereObjectData(Point3D(0.f, -1000.f, 0.f), 1000.f, GroundMat));
+		MaterialScatterData MatScatterData(0.f, Color(0.5f, 0.5f, 0.5f)) ;
+		m_World->VAddSphere(SphereObjectData(Point3D(0.f, -1000.f, 0.f), 1000.f), MatScatterData, MaterialType::Lambertian);
 		for (int a = -11; a < 11; a++)
 		{
 			for (int b = -11; b < 11; b++)
@@ -266,49 +268,50 @@ void SoftwareRenderer::CreateWorld()
 					{
 						// diffuse
 						Color Albedo = Color::RandomVector() * Color::RandomVector();
-						SphereMat = std::make_shared<Lambertian>(Albedo);
+						MaterialScatterData MatScatterData;
+						MatScatterData.Albedo = Albedo;
 						SphereData.Center = SphereCenter;
 						SphereData.Radius = 0.2f;
-						SphereData.Material = SphereMat;
-						m_World->VAddSphere(SphereData);
+						m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Lambertian);
 					}
 					else if (ChooseMat < 0.95f)
 					{
 						// metal
 						Color Albedo = Color::RandomVector();
 						float Fuzz = Utility::RandomFloat(0.f, 0.5f);
-						SphereMat = std::make_shared<Metal>(Albedo, Fuzz);
+						MaterialScatterData MatScatterData;
+						MatScatterData.Albedo = Albedo;
+						MatScatterData.FuzzOrRI = Fuzz;
 						SphereData.Center = SphereCenter;
 						SphereData.Radius = 0.2f;
-						SphereData.Material = SphereMat;
-						m_World->VAddSphere(SphereData);
+						m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Metal);
 					}
 					else
 					{
 						// glass
-						SphereMat = std::make_shared<Dielectric>(1.5);
+						MaterialScatterData MatScatterData;
+						MatScatterData.FuzzOrRI = 1.5f;
 						SphereData.Center = SphereCenter;
 						SphereData.Radius = 0.2f;
-						SphereData.Material = SphereMat;
-						m_World->VAddSphere(SphereData);
+						m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Dielectric);
 					}
 				}
 			}
 		}
+		MaterialScatterData ScatterData;
+		ScatterData.FuzzOrRI = 1.5f;
+		m_World->VAddSphere(SphereObjectData(Point3D(0.f, 1.f, 0.f), 1.f), ScatterData, MaterialType::Dielectric);
 
-		std::shared_ptr<Material> Mat1 = std::make_shared<Dielectric>(1.5);
-		//m_World->Add(std::make_shared<Sphere>(Point3D(0, 1, 0), 1.0, Mat1));
-		m_World->VAddSphere(SphereObjectData(Point3D(0, 1, 0), 1.f, Mat1));
-		std::shared_ptr<Material> Mat2 = std::make_shared<Lambertian>(Color(0.4, 0.2, 0.1));
-		//m_World->Add(std::make_shared<Sphere>(Point3D(-4, 1, 0), 1.0, Mat2));
-		m_World->VAddSphere(SphereObjectData(Point3D(-4, 1, 0), 1.f, Mat2));
-		std::shared_ptr<Material> Mat3 = std::make_shared<Metal>(Color(0.7, 0.6, 0.5), 0.0);
-		//m_World->Add(std::make_shared<Sphere>(Point3D(4, 1, 0), 1.0, Mat3));
-		m_World->VAddSphere(SphereObjectData(Point3D(4, 1, 0), 1.f, Mat3));
+		ScatterData.Albedo = Color(0.4f, 0.2f, 0.1f);
+		m_World->VAddSphere(SphereObjectData(Point3D(-4, 1, 0), 1.f), ScatterData, MaterialType::Lambertian);
+
+		ScatterData.Albedo = Color(0.7f, 0.6f, 0.5f);
+		ScatterData.FuzzOrRI = 0.f;
+		m_World->VAddSphere(SphereObjectData(Point3D(4, 1, 0), 1.f), ScatterData, MaterialType::Metal);
 	}
 	else
 	{
-		
+		/*
 		std::shared_ptr<Material> GroundMat = std::make_shared<Lambertian>(Color(0.5f, 0.5f, 0.5f));
 		m_World = std::make_unique<HittableList>(std::make_shared<Sphere>(Point3D(0.f, -1000.f, 0.f), 1000.f, GroundMat));
 		for (int a = -11; a < 11; a++) 
@@ -354,7 +357,7 @@ void SoftwareRenderer::CreateWorld()
 		m_World->Add(std::make_shared<Sphere>(Point3D(-4, 1, 0), 1.0, Mat2));
 
 		std::shared_ptr<Material> Mat3 = std::make_shared<Metal>(Color(0.7, 0.6, 0.5), 0.0);
-		m_World->Add(std::make_shared<Sphere>(Point3D(4, 1, 0), 1.0, Mat3));
+		m_World->Add(std::make_shared<Sphere>(Point3D(4, 1, 0), 1.0, Mat3));*/
 	}
 	
 }

@@ -5,12 +5,28 @@
 #include <vector>
 
 class Material;
+class VMaterial;
+
+
+enum MaterialType : uint8_t
+{
+	Lambertian,
+	Metal,
+	Dielectric
+};
 
 //A(hopefully) well-aligned struct that packs all the transform data of a single sphere
 struct SphereTransformData
 {
 	Vector3D SphereCenter;
 	float SphereRadius;
+};
+
+//Struct to pack the two(or one, there's a waste of space going on here) floats we need for material scatter calculations
+struct MaterialScatterData
+{
+	float FuzzOrRI = 0.f;
+	Color Albedo = (0.f, 0.f, 0.f);
 };
 
 struct SphereTransformComponent
@@ -31,6 +47,17 @@ struct SphereMaterialComponent
 	std::vector<std::shared_ptr<Material>> SphereMaterials;
 };
 
+struct VSphereMatComponent
+{
+	VSphereMatComponent()
+	{
+		MaterialData.reserve(10);
+		MaterialTypes.reserve(10);
+	}
+	std::vector<MaterialType> MaterialTypes;
+	std::vector<MaterialScatterData> MaterialData;
+};
+
 struct SphereObjectData
 {
 	Vector3D Center;
@@ -45,16 +72,17 @@ public:
 	HittableList(std::shared_ptr<Hittable> Object);
 	virtual bool Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord) override;
 	//This functions uses the sphere data arrays in the hittablelist class to perform hit detection. Potentially bad name
-	bool VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord);
+	bool VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord, MaterialScatterData& OutScatterData);
 	bool VSphereHit(const Ray& R, Interval HitInterval, const Vector3D& Center, const float Radius, HitRecord& OutHitRecord);
 	void Clear();
 	void Add(std::shared_ptr<Hittable> Object);
-	void VAddSphere(const SphereObjectData& Data);
+	void VAddSphere(const SphereObjectData& Data, const MaterialScatterData& MatData, MaterialType MatType);
 
 
 private:
 	std::vector<std::shared_ptr<Hittable>> m_Objects;
 	SphereTransformComponent m_SphereTransforms;
 	SphereMaterialComponent m_SphereMaterials;
+	VSphereMatComponent m_VSphereMatComponent;
 	size_t m_NumObjects = 0;
 };

@@ -3,7 +3,7 @@
 #include "HittableList.h"
 
 
-#define USEBULKHIT 0
+#define USEBULKHIT 1
 
 class Camera
 {

@@ -1,11 +1,10 @@
 #include "../Public/HittableList.h"
 #include "../Public/Material.h"
+#include "../Public/VMaterial.h"
 
-
-HittableList::HittableList()
+HittableList::HittableList() : m_SphereTransforms(SphereTransformComponent{}), m_VSphereMatComponent(VSphereMatComponent{})
 {
-	m_SphereTransforms = SphereTransformComponent{};
-	m_SphereMaterials = SphereMaterialComponent{};
+
 }
 
 HittableList::HittableList(std::shared_ptr<Hittable> Object)
@@ -33,7 +32,7 @@ bool HittableList::Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitReco
 }
 
 //These two functions are just here temporarily. Obviously this is not a good architecture but we go with it FOR NOW
-bool HittableList::VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord)
+bool HittableList::VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord, MaterialScatterData& OutScatterData)
 {
 	bool HasHit = false;
 	float ClosestSoFar = HitInterval.Max;
@@ -45,7 +44,9 @@ bool HittableList::VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHi
 		{
 			HasHit = true;
 			ClosestSoFar = OutHitRecord.t;
-			OutHitRecord.HitMaterial = m_SphereMaterials.SphereMaterials[i];
+			OutScatterData = m_VSphereMatComponent.MaterialData[i];
+			OutHitRecord.VHitMaterial = m_VSphereMatComponent.MaterialTypes[i];
+			
 		}
 	}
 
@@ -109,9 +110,10 @@ void HittableList::Add(std::shared_ptr<Hittable> Object)
 	m_Objects.push_back(Object);
 }
 
-void HittableList::VAddSphere(const SphereObjectData& Data)
+void HittableList::VAddSphere(const SphereObjectData& Data, const MaterialScatterData& MatData, MaterialType MatType)
 {
 	m_SphereTransforms.TransformData.emplace_back(Data.Center, Data.Radius);
-	m_SphereMaterials.SphereMaterials.push_back(Data.Material);
+	m_VSphereMatComponent.MaterialData.emplace_back(MatData.FuzzOrRI, MatData.Albedo);
+	m_VSphereMatComponent.MaterialTypes.push_back(MatType);
 	m_NumObjects++;
 }

@@ -1,5 +1,6 @@
 #include "../Public/Camera.h"
 #include "../Public/Material.h"
+#include "../Public/VMaterial.h"
 #include <stack>
 
 //Initialize camera parameters and delta U,V
@@ -60,6 +61,7 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 {
 	Color PixelColor = Color{ 0.f, 0.f, 0.f };
 	HitRecord TempHitRecord;
+	MaterialScatterData MatScatterData;
 	Ray CurrentRay = R;
 	Color TotalAttenuation = Color{1.f, 1.f, 1.f};
 	for (int i = 0; i < m_MaxDepth; i++)
@@ -95,7 +97,7 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 		}
 		else
 		{
-			if (World.VBulkHit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord))
+			if (World.VBulkHit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord, MatScatterData))
 			{
 				/*
 				* Lambertian reflection - light is more likely to bounce in directions close to normal
@@ -103,7 +105,7 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 				*/
 				Ray ScatteredRay;
 				Color Attenuation;
-				if (TempHitRecord.HitMaterial->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay))
+				if (VMaterial::DispatchScatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay, MatScatterData, TempHitRecord.VHitMaterial))
 				{
 					CurrentRay = ScatteredRay;
 					TotalAttenuation = TotalAttenuation * Attenuation;
