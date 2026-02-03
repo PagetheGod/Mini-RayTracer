@@ -153,7 +153,6 @@ void SoftwareRenderer::RenderFrameBuffer()
 				{
 					Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
 					Vector3D RayDirection = PixelPos - CameraCenter;
-					Ray CurrentRay = Ray(CameraCenter, RayDirection);
 
 					Color PixelColor = Color(0.f, 0.f, 0.f);
 					PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);

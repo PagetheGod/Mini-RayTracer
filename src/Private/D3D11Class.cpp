@@ -1,7 +1,8 @@
 #include "../Public/D3D11Class.h"
 #include <vector>
 
-D3D11Class::D3D11Class(HWND Hwnd, int Width, int Height) : m_Device(nullptr), m_DeviceContext(nullptr), m_Hwnd(Hwnd), m_Width(Width), m_Height(Height)
+D3D11Class::D3D11Class(HWND Hwnd, int Width, int Height) : m_Device(nullptr), m_DeviceContext(nullptr), m_SwapChain(nullptr), m_RasterState(nullptr), m_Hwnd(Hwnd), 
+m_Width(Width), m_Height(Height), m_RTV(nullptr)
 {
 	
 
@@ -33,7 +34,6 @@ bool D3D11Class::InitializeD3D11()
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
 		return false;
 	}
-
 	Result = DXGIAdapter->EnumOutputs(0, &DXGIAdapterOutput);
 	if (FAILED(Result))
 	{
@@ -63,7 +63,6 @@ bool D3D11Class::InitializeD3D11()
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
 		return false;
 	}
-
 	unsigned int RefreshRateNum = 0;
 	unsigned int RefreshRateDe = 0;
 
@@ -155,6 +154,112 @@ bool D3D11Class::InitializeD3D11()
 		return false;
 	}
 
+	//Create the back buffer for swap chain
+	ID3D11Texture2D* BackBufferPtr;
+	Result = m_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)(&BackBufferPtr));
+	if (FAILED(Result))
+	{
+		wchar_t ErrorMessage[128];
+		wsprintf(ErrorMessage, L"Failed to create get back buffer! Error code: %04X", Result);
+		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		return false;
+	}
+
+	//Create the RTV for the swap chain back buffer
+	Result = m_Device->CreateRenderTargetView(BackBufferPtr, nullptr, &m_RTV);
+	if (FAILED(Result))
+	{
+		wchar_t ErrorMessage[128];
+		wsprintf(ErrorMessage, L"Failed to create RTV for back buffer! Error code: %04X", Result);
+		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		return false;
+	}
+
+	//Release the back buffer ptr, COM uses reference couting, so we are not actually releasing the back buffer here
+	BackBufferPtr->Release();
+	BackBufferPtr = nullptr;
+
+	m_DeviceContext->OMSetRenderTargets(1, &m_RTV, nullptr);
+
+	D3D11_RASTERIZER_DESC RasterDesc{};
+	RasterDesc.CullMode = D3D11_CULL_BACK;
+	RasterDesc.FillMode = D3D11_FILL_SOLID;
+
+	Result = m_Device->CreateRasterizerState(&RasterDesc, &m_RasterState);
+	if (FAILED(Result))
+	{
+		wchar_t ErrorMessage[128];
+		wsprintf(ErrorMessage, L"Failed to create raster state! Error code: %04X", Result);
+		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		return false;
+	}
+
+	m_DeviceContext->RSSetState(m_RasterState);
+
+	m_Viewport.Width = (float)m_Width;
+	m_Viewport.Height = (float)m_Height;
+	m_Viewport.TopLeftX = 0.f;
+	m_Viewport.TopLeftY = 0.f;
+	m_Viewport.MinDepth = 0.f;
+	m_Viewport.MaxDepth = 1.f;
+
+	m_DeviceContext->RSSetViewports(1, &m_Viewport);
+
+
+
 
 	return true;
+}
+
+void D3D11Class::ClearBackground()
+{
+	float Color[4];
+	Color[0] = 0.f;
+	Color[1] = 0.f; 
+	Color[2] = 0.f; 
+	Color[3] = 1.f;
+
+	m_DeviceContext->ClearRenderTargetView(m_RTV, Color);
+
+}
+
+void D3D11Class::PresentScene()
+{
+	if (m_IsVsyncEnabled)
+	{
+		m_SwapChain->Present(1, 0);
+	}
+	else
+	{
+		m_SwapChain->Present(0, 0);
+	}
+}
+
+D3D11Class::~D3D11Class()
+{
+	if (m_Device)
+	{
+		m_Device->Release();
+		m_Device = nullptr;
+	}
+	if (m_DeviceContext)
+	{
+		m_DeviceContext->Release();
+		m_DeviceContext = nullptr;
+	}
+	if (m_SwapChain)
+	{
+		m_SwapChain->Release();
+		m_SwapChain = nullptr;
+	}
+	if (m_RasterState)
+	{
+		m_RasterState->Release();
+		m_RasterState = nullptr;
+	}
+	if (m_RTV)
+	{
+		m_RTV->Release();
+		m_RTV = nullptr;
+	}
 }

@@ -99,10 +99,6 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 		{
 			if (World.VBulkHit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord, MatScatterData))
 			{
-				/*
-				* Lambertian reflection - light is more likely to bounce in directions close to normal
-				* So we add a random unit vector to the normal. To get a random bounce on the unit tangent sphere
-				*/
 				Ray ScatteredRay;
 				Color Attenuation;
 				if (VMaterial::DispatchScatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay, MatScatterData, TempHitRecord.VHitMaterial))
