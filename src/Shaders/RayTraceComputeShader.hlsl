@@ -8,6 +8,10 @@ cbuffer GlobalBuffer
     float Padding;
 };
 
+cbuffer SampleOffsetBuffer
+{
+    float2 SampleOffsets[100];
+};
 
 struct SphereTransformType
 {
@@ -25,6 +29,8 @@ struct SphereMaterialType
 
 StructuredBuffer<SphereTransformType> SphereTransformBuffer : register(t0);
 StructuredBuffer<SphereMaterialType> SphereMaterialBuffer : register(t1);
+
+#define Depth 50
 
 //Let's try the frequently suggested 8x8(64-pixel tile) render.
 //The numthreads can be expressed in 3D, 2D, or 1D manner, which is why it has three components
