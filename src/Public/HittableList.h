@@ -6,7 +6,10 @@
 
 class Material;
 class VMaterial;
-
+//We probably should put the definitions of these into some interface class to avoid all the forward decls
+//And the pseudo circular references
+struct SphereTransformBufferType;
+struct SphereMaterialBufferType;
 
 enum MaterialType : uint8_t
 {
@@ -77,12 +80,15 @@ public:
 	void Clear();
 	void Add(std::shared_ptr<Hittable> Object);
 	void VAddSphere(const SphereObjectData& Data, const MaterialScatterData& MatData, MaterialType MatType);
-
+	SphereTransformBufferType* GetCSTransformBuffer();
+	SphereMaterialBufferType* GetCSMaterialBuffer();
 
 private:
 	std::vector<std::shared_ptr<Hittable>> m_Objects;
 	SphereTransformComponent m_SphereTransforms;
 	SphereMaterialComponent m_SphereMaterials;
+	SphereTransformBufferType* m_CSTransformBuffer;
+	SphereMaterialBufferType* m_CSMaterialBuffer;
 	VSphereMatComponent m_VSphereMatComponent;
 	size_t m_NumObjects = 0;
 };

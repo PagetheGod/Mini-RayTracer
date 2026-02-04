@@ -1,8 +1,11 @@
 #include "../Public/HittableList.h"
 #include "../Public/Material.h"
 #include "../Public/VMaterial.h"
+#include "../Public/ComputeShaderManager.h"
 
-HittableList::HittableList() : m_SphereTransforms(SphereTransformComponent{}), m_VSphereMatComponent(VSphereMatComponent{})
+
+HittableList::HittableList() : m_SphereTransforms(SphereTransformComponent{}), m_VSphereMatComponent(VSphereMatComponent{}), m_CSTransformBuffer(nullptr),
+m_CSMaterialBuffer(nullptr)
 {
 
 }
@@ -116,4 +119,22 @@ void HittableList::VAddSphere(const SphereObjectData& Data, const MaterialScatte
 	m_VSphereMatComponent.MaterialData.emplace_back(MatData.FuzzOrRI, MatData.Albedo);
 	m_VSphereMatComponent.MaterialTypes.push_back(MatType);
 	m_NumObjects++;
+}
+
+SphereTransformBufferType* HittableList::GetCSTransformBuffer()
+{
+	m_CSTransformBuffer = new SphereTransformBufferType[m_NumObjects];
+	for (size_t i = 0; i < m_NumObjects; i++)
+	{
+		SphereTransformData& Data = m_SphereTransforms.TransformData[i];
+		m_CSTransformBuffer[i].SphereCenterPos = XMFLOAT3(Data.SphereCenter.X, Data.SphereCenter.Y, Data.SphereCenter.Z);
+		m_CSTransformBuffer[i].Radius = Data.SphereRadius;
+	}
+	return m_CSTransformBuffer;
+}
+
+SphereMaterialBufferType* HittableList::GetCSMaterialBuffer()
+{
+	m_CSMaterialBuffer = new SphereMaterialBufferType[m_NumObjects];
+	return nullptr;
 }
