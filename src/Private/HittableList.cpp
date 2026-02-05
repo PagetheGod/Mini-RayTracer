@@ -136,5 +136,14 @@ SphereTransformBufferType* HittableList::GetCSTransformBuffer()
 SphereMaterialBufferType* HittableList::GetCSMaterialBuffer()
 {
 	m_CSMaterialBuffer = new SphereMaterialBufferType[m_NumObjects];
-	return nullptr;
+	for (size_t i = 0; i < m_NumObjects; i++)
+	{
+		auto& [MaterialType, MaterialData] = m_VSphereMatComponent;
+		m_CSMaterialBuffer[i].Albedo = XMFLOAT3(MaterialData[i].Albedo.X, MaterialData[i].Albedo.Y, MaterialData[i].Albedo.Z);
+		m_CSMaterialBuffer[i].Fuzz = MaterialData[i].FuzzOrRI;
+		m_CSMaterialBuffer[i].RefractionIndex = MaterialData[i].FuzzOrRI;
+		m_CSMaterialBuffer[i].Type = MaterialType[i];
+	}
+	return m_CSMaterialBuffer;
 }
+

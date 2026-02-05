@@ -1,4 +1,5 @@
 #include "../Public/ComputeShaderManager.h"
+#include "../Public/Camera.h"
 
 ComputeShaderManager::ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext) : m_Device(Device), m_DeviceContext(DeviceContext), m_CSConstantBuffer(nullptr)
 , m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr), m_ObjectCount(0)

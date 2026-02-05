@@ -4,7 +4,7 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 
-#include "Camera.h"
+
 
 using namespace DirectX;
 
@@ -58,6 +58,8 @@ private:
 	ID3D11Buffer* m_SampleOffsetBuffer;
 	ID3D11Buffer* m_SphereTransformBuffer;
 	ID3D11Buffer* m_SphereMaterialBuffer;
+	SphereTransformBufferType* m_CSTransformBuffer;
+	SphereMaterialBufferType* m_CSMaterialBuffer;
 	ID3D11ShaderResourceView* m_TransformSRV;
 	ID3D11ShaderResourceView* m_MaterialSRV;
 	unsigned int m_ObjectCount;
