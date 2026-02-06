@@ -12,8 +12,9 @@ class HardwareRenderer
 {
 public:
 	HardwareRenderer(int Width, int Height, float AspectRatio);
+	~HardwareRenderer();
 	bool Intialize(HWND hWnd);
-
+	void GetShaderBuffers();
 
 private:
 	int m_Width;
@@ -29,5 +30,6 @@ private:
 	std::unique_ptr<D3D11Class> m_D3D11;
 	std::unique_ptr<HittableList> m_World;
 	HWND m_hWnd;
-	unsigned char* m_FrameBuffer;
+	SphereTransformBufferType* m_CSTransformBuffer;
+	SphereMaterialBufferType* m_CSMaterialBuffer;
 };

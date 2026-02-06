@@ -1,10 +1,12 @@
 #include "../Public/HardwareRenderer.h"
+#include "../Public/ComputeShaderManager.h"
 
 HardwareRenderer::HardwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_World(nullptr), 
-m_FrameBuffer(nullptr)
+m_CSTransformBuffer(nullptr), m_CSMaterialBuffer(nullptr)
 {
-
 }
+
+
 
 bool HardwareRenderer::Intialize(HWND hWnd)
 {
@@ -36,13 +38,27 @@ bool HardwareRenderer::Intialize(HWND hWnd)
 	m_DeltaV = m_ViewportV / (float)(m_Height);
 
 	//Intialize the frame buffer and the D2D1 class used for software rendering
-	m_FrameBuffer = new unsigned char[m_Width * m_Height * 4];//Each pixel needs four bytes for B8G8R8A8
-	memset(m_FrameBuffer, 0, m_Width * m_Height * 4);
-	if (!m_FrameBuffer)
-	{
-		MessageBox(NULL, L"Failed to allocate frame buffer!", L"Error", MB_OK);
-		return false;
-	}
 
 	return true;
 }
+
+void HardwareRenderer::GetShaderBuffers()
+{
+	m_CSTransformBuffer = m_World->GetCSTransformBuffer();
+	m_CSMaterialBuffer = m_World->GetCSMaterialBuffer();
+}
+
+HardwareRenderer::~HardwareRenderer()
+{
+	if (m_CSMaterialBuffer)
+	{
+		delete[] m_CSMaterialBuffer;
+		m_CSMaterialBuffer = nullptr;
+	}
+	if (m_CSTransformBuffer)
+	{
+		delete[] m_CSTransformBuffer;
+		m_CSTransformBuffer = nullptr;
+	}
+}
+

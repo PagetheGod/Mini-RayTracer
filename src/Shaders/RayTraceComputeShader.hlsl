@@ -1,3 +1,6 @@
+#define Depth 50
+#define SampleCount 100
+
 cbuffer GlobalBuffer
 {
     float3 CameraPos;
@@ -10,7 +13,7 @@ cbuffer GlobalBuffer
 
 cbuffer SampleOffsetBuffer
 {
-    float2 SampleOffsets[100];
+    float2 SampleOffsets[SampleCount];
 };
 
 struct SphereTransformType
@@ -22,15 +25,29 @@ struct SphereTransformType
 struct SphereMaterialType
 {
     float3 Albedo;
-    float Fuzz;
-    float RefractionIndex;
-    uint Type;
+    float FuzzOrRI;
+    uint Type; //0:lambertian, 1:metal, 2:dielectric
+};
+
+//Non buffer struct type
+struct Ray
+{
+    float3 Origin;
+    float3 Direction;
+};
+
+struct HitRecord
+{
+    float3 HitPoint;
+    float3 Normal;
+    float t;
+    bool IsFrontFace;
+    uint MaterialType;
 };
 
 StructuredBuffer<SphereTransformType> SphereTransformBuffer : register(t0);
 StructuredBuffer<SphereMaterialType> SphereMaterialBuffer : register(t1);
-
-#define Depth 50
+//RWStructuredBuffer;
 
 //Let's try the frequently suggested 8x8(64-pixel tile) render.
 //The numthreads can be expressed in 3D, 2D, or 1D manner, which is why it has three components
@@ -47,5 +64,65 @@ StructuredBuffer<SphereMaterialType> SphereMaterialBuffer : register(t1);
 [numthreads(8, 8, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
+    //Set up the pixel position and color
     float2 PixelXY = DTid.xy;
+    float3 PixelPos = FirstPixelPos + PixelXY.x * DeltaU + PixelXY.y * DeltaV;
+    float4 Color = float4(0.f, 0.f, 0.f, 1.f);
+    const float SampleScaleFactor = 1.f / SampleCount;
+    
+    for (int i = 0; i < SampleCount; i++)
+    {
+        float3 CurrentSample = PixelPos + SampleOffsets[i].x * DeltaU + SampleOffsets[i].y * DeltaV;
+        float3 RayDir = normalize(CurrentSample - CameraPos);
+        Ray CurrentRay;
+        CurrentRay.Direction = RayDir;
+        CurrentRay.Origin = CameraPos;
+    }
+
+}
+
+
+//Helpers
+float4 PerformPathTrace(const Ray R)
+{
+    float4 Color = float4(0.f, 0.f, 0.f, 1.f);
+    
+    
+    return Color;
+}
+
+bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const float Radius, inout HitRecord OutHitRecord)
+{
+    float3 RayOrigin = R.Origin;
+    float3 RayDirection = R.Direction;
+    float3 RayOriToCenter = RayOrigin - Center;
+    
+    float a = dot(RayDirection, RayDirection);
+    float h = dot(RayDirection, RayOriToCenter);
+    float c = dot(RayOriToCenter, RayOriToCenter) - Radius * Radius;
+    
+    float Discriminant = h * h - a * c;
+    if(Discriminant < 0.f)
+    {
+        return false;
+    }
+    
+    float SqrtD = sqrt(Discriminant);
+    float Root = (h - SqrtD) / a;
+    
+    if (Root < Min || Root > Max)
+    {
+        Root = (h + SqrtD) / a;
+        if (Root < Min || Root > Max)
+        {
+            return false;
+        }
+    }
+    
+    OutHitRecord.HitPoint = RayOrigin + Root * RayDirection;
+    OutHitRecord.t = Root;
+    OutHitRecord.Normal = (OutHitRecord.HitPoint - Center) / Radius;//Outward normal
+    OutHitRecord.IsFrontFace = dot(RayDirection, OutHitRecord.Normal) < 0.f;
+    OutHitRecord.Normal = OutHitRecord.IsFrontFace ? OutHitRecord.Normal : -OutHitRecord.Normal;
+    
 }

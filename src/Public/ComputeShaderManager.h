@@ -31,8 +31,7 @@ struct SphereTransformBufferType
 struct SphereMaterialBufferType
 {
 	XMFLOAT3 Albedo;
-	float Fuzz;
-	float RefractionIndex;
+	float FuzzOrRI;
 	uint32_t Type;
 };
 
@@ -58,8 +57,6 @@ private:
 	ID3D11Buffer* m_SampleOffsetBuffer;
 	ID3D11Buffer* m_SphereTransformBuffer;
 	ID3D11Buffer* m_SphereMaterialBuffer;
-	SphereTransformBufferType* m_CSTransformBuffer;
-	SphereMaterialBufferType* m_CSMaterialBuffer;
 	ID3D11ShaderResourceView* m_TransformSRV;
 	ID3D11ShaderResourceView* m_MaterialSRV;
 	unsigned int m_ObjectCount;
