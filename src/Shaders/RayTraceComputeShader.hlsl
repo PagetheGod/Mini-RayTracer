@@ -8,7 +8,7 @@ cbuffer GlobalBuffer
     float3 FirstPixelPos;
     float3 DeltaU;
     float3 DeltaV;
-    float Padding;
+    uint ObjectCount;
 };
 
 cbuffer SampleOffsetBuffer
@@ -43,6 +43,12 @@ struct HitRecord
     float t;
     bool IsFrontFace;
     uint MaterialType;
+};
+
+struct MaterialScatterData
+{
+    float FuzzOrRI;
+    float3 Attenuation;
 };
 
 StructuredBuffer<SphereTransformType> SphereTransformBuffer : register(t0);
@@ -125,4 +131,20 @@ bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const flo
     OutHitRecord.IsFrontFace = dot(RayDirection, OutHitRecord.Normal) < 0.f;
     OutHitRecord.Normal = OutHitRecord.IsFrontFace ? OutHitRecord.Normal : -OutHitRecord.Normal;
     
+}
+
+
+bool HitWorld(const Ray R, float Min, float Max, inout HitRecord OutHitRecord, inout OutScatterData)
+{
+    bool HasHit = false;
+    float ClosestSoFar = Max;
+    for (int i = 0; i < ObjectCount; i++)
+    {
+        if (SphereHit(R, Min, ClosestSoFar, SphereTransformBuffer[i].SphereCenter, SphereTransformBuffer[i].Radius, OutHitRecord))
+        {
+            
+        }
+
+    }
+
 }
