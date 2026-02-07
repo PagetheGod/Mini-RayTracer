@@ -9,6 +9,8 @@ cbuffer GlobalBuffer
     float3 DeltaU;
     float3 DeltaV;
     uint ObjectCount;
+    uint2 ScreenSize; //Screen width, height
+    float2 Padding;
 };
 
 cbuffer SampleOffsetBuffer
@@ -51,6 +53,11 @@ struct MaterialScatterData
     float3 Attenuation;
 };
 
+struct RandomState
+{
+    uint Seed;
+};
+
 StructuredBuffer<SphereTransformType> SphereTransformBuffer : register(t0);
 StructuredBuffer<SphereMaterialType> SphereMaterialBuffer : register(t1);
 //RWStructuredBuffer;
@@ -66,6 +73,39 @@ StructuredBuffer<SphereMaterialType> SphereMaterialBuffer : register(t1);
 * Example: we are at the (100, 50) pixel. We can get that by 12(12th tile in x) * 8 + 4(group thread ID) = 100
 * and (6th tile in y) * 8 + 2(group thread ID) = 50
 */
+
+//Random number helpers
+uint PCGHash(uint Seed)
+{
+    //A nice and simple hash function that acts as a random number generator. 
+    //Good balance between performance and quality. I don't understand math magic here
+    //Note that PCG is not a single function. It's a family of hashing functions(or recipe to make hashing functions)
+    uint State = Seed * 747796405u + 2891336453u;
+    uint Word = ((State >> ((State >> 28u) + 4u)) ^ State) * 277803737u;
+    return (Word >> 22u) ^ Word;
+}
+
+
+uint FNV1AHash(uint Seed)
+{
+    const uint FNVPrime = 16777619u;
+    const uint OffsetBasis = 2166136261u;
+    uint Hash = OffsetBasis;
+    Hash ^= Seed;
+    Hash *= FNVPrime;
+    return Hash;
+}
+
+
+void InitRandomState(inout RandomState State, uint2 PixelXY, uint SampleIndex, uint Width, uint Height)
+{
+    State.Seed = PixelXY.x + PixelXY.y * Width + SampleIndex * Width * Height;
+}
+
+
+
+
+
 
 [numthreads(8, 8, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
@@ -83,19 +123,39 @@ void main( uint3 DTid : SV_DispatchThreadID )
         Ray CurrentRay;
         CurrentRay.Direction = RayDir;
         CurrentRay.Origin = CameraPos;
+        RandomState State;
+        InitRandomState(State, PixelXY, i, ScreenSize.x, ScreenSize.y);
     }
 
 }
 
 
 //Helpers
-float4 PerformPathTrace(const Ray R)
+
+
+
+
+float RandomFloat(inout RandomState State)
 {
-    float4 Color = float4(0.f, 0.f, 0.f, 1.f);
-    
-    
-    return Color;
+    State.Seed = PCGHash(State.Seed);
+    return (State.Seed / 4294967295.0) * 2.f - 1.f; //Map to [-1, 1]
 }
+
+float3 RandomUnitVector(inout RandomState State)
+{
+    float3 Vec;
+    while(true)
+    {
+        Vec = float3(RandomFloat(State), RandomFloat(State), RandomFloat(State));
+        float LengthSquared = dot(Vec, Vec);
+        if (LengthSquared > 1e-38 && LengthSquared <= 1.f)
+        {
+            break;
+        }
+    }
+    return normalize(Vec);
+}
+
 
 bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const float Radius, inout HitRecord OutHitRecord)
 {
@@ -134,7 +194,7 @@ bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const flo
 }
 
 
-bool HitWorld(const Ray R, float Min, float Max, inout HitRecord OutHitRecord, inout OutScatterData)
+bool HitWorld(const Ray R, float Min, float Max, inout HitRecord OutHitRecord, inout MaterialScatterData OutScatterData)
 {
     bool HasHit = false;
     float ClosestSoFar = Max;
@@ -142,9 +202,42 @@ bool HitWorld(const Ray R, float Min, float Max, inout HitRecord OutHitRecord, i
     {
         if (SphereHit(R, Min, ClosestSoFar, SphereTransformBuffer[i].SphereCenter, SphereTransformBuffer[i].Radius, OutHitRecord))
         {
-            
+            HasHit = true;
+            ClosestSoFar = OutHitRecord.t;
+            OutScatterData.Attenuation = SphereMaterialBuffer[i].Albedo;
+            OutScatterData.FuzzOrRI = SphereMaterialBuffer[i].FuzzOrRI;
         }
 
     }
+    return HasHit;
+}
 
+
+bool LambertianScatter(const Ray R, const HitRecord InHitRecord, const MaterialScatterData InScatterData, inout Ray ScatteredRay)
+{
+    float3 ScatterDirection = InHitRecord.Normal + RandomUnitVector();
+    if (IsNearZero(ScatterDirection))
+    {
+        ScatterDirection = InHitRecord.Normal;
+    }
+    
+    ScatteredRay.Origin = InHitRecord.HitPoint;
+    ScatteredRay.Direction = ScatterDirection;
+    
+    return true;
+}
+
+
+
+
+
+
+
+
+float4 PerformPathTrace(const Ray R)
+{
+    float4 Color = float4(0.f, 0.f, 0.f, 1.f);
+    
+    
+    return Color;
 }

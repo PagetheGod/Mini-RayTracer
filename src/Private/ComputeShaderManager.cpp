@@ -1,11 +1,12 @@
 #include "../Public/ComputeShaderManager.h"
 #include "../Public/Camera.h"
 
-ComputeShaderManager::ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext) : m_Device(Device), m_DeviceContext(DeviceContext), m_CSConstantBuffer(nullptr)
-, m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr), m_ObjectCount(0)
+ComputeShaderManager::ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext, unsigned int ScreenWidth, unsigned int ScreenHeight ) : m_Device(Device), m_DeviceContext(DeviceContext), 
+m_CSConstantBuffer(nullptr), m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr), m_ObjectCount(0),
+m_Width(ScreenWidth), m_Height(ScreenHeight)
 {
-
 }
+
 
 
 bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount)
@@ -159,7 +160,9 @@ bool ComputeShaderManager::SetShaderParams(XMFLOAT3& CameraPos, XMFLOAT3& Viewpo
 	GlobalBufferData->FirstPixelPos = FirstPixelPos;
 	GlobalBufferData->DeltaU = DeltaU;
 	GlobalBufferData->DeltaV = DeltaV;
-	GlobalBufferData->Infinity = Constants::g_Infinity;
+	GlobalBufferData->ObjectCount = m_ObjectCount;
+	GlobalBufferData->ScreenSize = XMUINT2(m_Width, m_Height);
+	GlobalBufferData->Padding = XMFLOAT2(0.0f, 0.0f);
 
 	m_DeviceContext->Unmap(m_CSConstantBuffer, 0);
 

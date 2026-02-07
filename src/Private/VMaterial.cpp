@@ -76,7 +76,7 @@ bool VMaterial::Dielectric(const Ray& R, const HitRecord& InHitRecord, Color& Ou
 	{
 		ScatteredDirection = Vector3D::Reflect(UnitDirection, InHitRecord.HitNormal);
 	}
-
+	
 	OutScattered = Ray(InHitRecord.HitPoint, ScatteredDirection);
 
 	return true;
