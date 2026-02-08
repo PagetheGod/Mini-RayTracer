@@ -1,6 +1,3 @@
-#define Depth 50
-#define SampleCount 100
-
 cbuffer GlobalBuffer
 {
     float3 CameraPos;
@@ -10,12 +7,8 @@ cbuffer GlobalBuffer
     float3 DeltaV;
     uint ObjectCount;
     uint2 ScreenSize; //Screen width, height
-    float2 Padding;
-};
-
-cbuffer SampleOffsetBuffer
-{
-    float2 SampleOffsets[SampleCount];
+    uint Depth;
+    uint SampleCount;
 };
 
 struct SphereTransformType
@@ -60,7 +53,7 @@ struct RandomState
 
 StructuredBuffer<SphereTransformType> SphereTransformBuffer : register(t0);
 StructuredBuffer<SphereMaterialType> SphereMaterialBuffer : register(t1);
-//RWStructuredBuffer;
+RWTexture2D<uint> OutputBuffer : register(u0);
 
 //Let's try the frequently suggested 8x8(64-pixel tile) render.
 //The numthreads can be expressed in 3D, 2D, or 1D manner, which is why it has three components
@@ -96,44 +89,10 @@ uint FNV1AHash(uint Seed)
     return Hash;
 }
 
-
 void InitRandomState(inout RandomState State, uint2 PixelXY, uint SampleIndex, uint Width, uint Height)
 {
     State.Seed = PixelXY.x + PixelXY.y * Width + SampleIndex * Width * Height;
 }
-
-
-
-
-
-
-[numthreads(8, 8, 1)]
-void main( uint3 DTid : SV_DispatchThreadID )
-{
-    //Set up the pixel position and color
-    float2 PixelXY = DTid.xy;
-    float3 PixelPos = FirstPixelPos + PixelXY.x * DeltaU + PixelXY.y * DeltaV;
-    float4 Color = float4(0.f, 0.f, 0.f, 1.f);
-    const float SampleScaleFactor = 1.f / SampleCount;
-    
-    for (int i = 0; i < SampleCount; i++)
-    {
-        float3 CurrentSample = PixelPos + SampleOffsets[i].x * DeltaU + SampleOffsets[i].y * DeltaV;
-        float3 RayDir = normalize(CurrentSample - CameraPos);
-        Ray CurrentRay;
-        CurrentRay.Direction = RayDir;
-        CurrentRay.Origin = CameraPos;
-        RandomState State;
-        InitRandomState(State, PixelXY, i, ScreenSize.x, ScreenSize.y);
-    }
-
-}
-
-
-//Helpers
-
-
-
 
 float RandomFloat(inout RandomState State)
 {
@@ -141,10 +100,18 @@ float RandomFloat(inout RandomState State)
     return (State.Seed / 4294967295.0) * 2.f - 1.f; //Map to [-1, 1]
 }
 
+//Helper to generate a float within an interval
+//The interval should always be symmetric about 0, otherwise we need to do some extra work to map the result to the desired range.
+float RandomFloatInterval(inout RandomState State, float Interval)
+{
+    State.Seed = PCGHash(State.Seed);
+    return (State.Seed / 4294967295.0) * 2.f * Interval - Interval; //Map to [-Interval, Interval]
+}
+
 float3 RandomUnitVector(inout RandomState State)
 {
     float3 Vec;
-    while(true)
+    while (true)
     {
         Vec = float3(RandomFloat(State), RandomFloat(State), RandomFloat(State));
         float LengthSquared = dot(Vec, Vec);
@@ -156,6 +123,12 @@ float3 RandomUnitVector(inout RandomState State)
     return normalize(Vec);
 }
 
+//Helpers
+bool IsNearZero(float3 Vec)
+{
+    const float Epsilon = 1e-8f;
+    return (abs(Vec.x) <= Epsilon) && (abs(Vec.y) <= Epsilon) && (abs(Vec.z) <= Epsilon);
+}
 
 bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const float Radius, inout HitRecord OutHitRecord)
 {
@@ -168,7 +141,7 @@ bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const flo
     float c = dot(RayOriToCenter, RayOriToCenter) - Radius * Radius;
     
     float Discriminant = h * h - a * c;
-    if(Discriminant < 0.f)
+    if (Discriminant < 0.f)
     {
         return false;
     }
@@ -187,7 +160,7 @@ bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const flo
     
     OutHitRecord.HitPoint = RayOrigin + Root * RayDirection;
     OutHitRecord.t = Root;
-    OutHitRecord.Normal = (OutHitRecord.HitPoint - Center) / Radius;//Outward normal
+    OutHitRecord.Normal = (OutHitRecord.HitPoint - Center) / Radius; //Outward normal
     OutHitRecord.IsFrontFace = dot(RayDirection, OutHitRecord.Normal) < 0.f;
     OutHitRecord.Normal = OutHitRecord.IsFrontFace ? OutHitRecord.Normal : -OutHitRecord.Normal;
     
@@ -213,9 +186,9 @@ bool HitWorld(const Ray R, float Min, float Max, inout HitRecord OutHitRecord, i
 }
 
 
-bool LambertianScatter(const Ray R, const HitRecord InHitRecord, const MaterialScatterData InScatterData, inout Ray ScatteredRay)
+bool LambertianScatter(const Ray R, inout float4 OutAttenuation, const HitRecord InHitRecord, const MaterialScatterData InScatterData, inout Ray ScatteredRay, inout RandomState RandState)
 {
-    float3 ScatterDirection = InHitRecord.Normal + RandomUnitVector();
+    float3 ScatterDirection = InHitRecord.Normal + RandomUnitVector(RandState);
     if (IsNearZero(ScatterDirection))
     {
         ScatterDirection = InHitRecord.Normal;
@@ -224,20 +197,134 @@ bool LambertianScatter(const Ray R, const HitRecord InHitRecord, const MaterialS
     ScatteredRay.Origin = InHitRecord.HitPoint;
     ScatteredRay.Direction = ScatterDirection;
     
+    OutAttenuation = float4(InScatterData.Attenuation, 1.f);
+    return true;
+}
+
+bool MetalicScatter(const Ray R, inout float4 OutAttenuation, const HitRecord InHitRecord, const MaterialScatterData InScatterData, inout Ray ScatteredRay, inout RandomState RandState)
+{
+    float3 Reflected = reflect(normalize(R.Direction), InHitRecord.Normal);
+    float3 ScatteredDirection = Reflected + InScatterData.FuzzOrRI * RandomUnitVector(RandState);
+    ScatteredRay.Origin = InHitRecord.HitPoint;
+    ScatteredRay.Direction = ScatteredDirection;
+    OutAttenuation = float4(InScatterData.Attenuation, 1.f);
+    return true;
+}
+
+bool DielectricScatter(const Ray R, inout float4 OutAttenuation, const HitRecord InHitRecord, const MaterialScatterData InScatterData, inout Ray ScatteredRay, inout RandomState RandState)
+{
+    OutAttenuation = float4(1.f, 1.f, 1.f, 1.f);
+    
+    const float3 UnitDirection = normalize(R.Direction);
+    
+    float RelativeRI = InHitRecord.IsFrontFace ? (1.f / InScatterData.FuzzOrRI) : InScatterData.FuzzOrRI;
+    
+    float CosTheta = min(dot(-UnitDirection, InHitRecord.Normal), 1.f);
+    float SinTheta = sqrt(1.f - CosTheta * CosTheta);
+    
+    bool CanRefract = RelativeRI * SinTheta <= 1.f;
+    float3 Direction;
+    
+    if (CanRefract)
+    {
+        Direction = refract(UnitDirection, InHitRecord.Normal, RelativeRI);
+    }
+    else
+    {
+        Direction = reflect(UnitDirection, InHitRecord.Normal);
+    }
+    
+    ScatteredRay.Origin = InHitRecord.HitPoint;
+    ScatteredRay.Direction = Direction;
     return true;
 }
 
 
+bool DispatchScatter(const Ray R, inout float4 OutAttenuation, const HitRecord InHitRecord, const MaterialScatterData InScatterData, inout Ray ScatteredRay, inout RandomState RandState)
+{
+    switch (InHitRecord.MaterialType)
+    {
+        case 0:
+            return LambertianScatter(R, OutAttenuation, InHitRecord, InScatterData, ScatteredRay, RandState);
+        case 1:
+            return MetalicScatter(R, OutAttenuation, InHitRecord, InScatterData, ScatteredRay, RandState);
+        case 2:
+            return DielectricScatter(R, OutAttenuation, InHitRecord, InScatterData, ScatteredRay, RandState);
+        default:
+            return false;
+    }
+}
 
 
-
-
-
-
-float4 PerformPathTrace(const Ray R)
+float4 PerformPathTrace(const Ray R, inout RandomState RandState)
 {
     float4 Color = float4(0.f, 0.f, 0.f, 1.f);
+    HitRecord TempHitRecord;
+    MaterialScatterData TempScatterData;
+    Ray CurrentRay = R;
+    float4 TotalAttenuation = float4(1.f, 1.f, 1.f, 1.f);
     
+    for (int i = 0; i < Depth; i++)
+    {
+        if (HitWorld(CurrentRay, 0.001f, 1.#INF, TempHitRecord, TempScatterData))
+        {
+            float4 Attenuation;
+            Ray ScatteredRay;
+            if (DispatchScatter(CurrentRay, Attenuation, TempHitRecord, TempScatterData, ScatteredRay, RandState))
+            {
+                TotalAttenuation *= Attenuation;
+                CurrentRay = ScatteredRay;
+            }
+            else
+            {
+                return float4(0.f, 0.f, 0.f, 1.f);
+            }
+        }
+        else
+        {
+            //Background color, simple gradient based on ray direction
+            float3 UnitDirection = normalize(CurrentRay.Direction);
+            float t = 0.5f * (UnitDirection.y + 1.f);
+            Color += ((1.f - t) * float4(0.9f, 0.9f, 0.9f, 1.f) + t * float4(0.5f, 0.7f, 1.f, 1.f));
+            return TotalAttenuation * Color;
+        
+        }
+    }
     
-    return Color;
+    return float4(0.f, 0.f, 0.f, 1.f);
 }
+
+
+
+
+
+[numthreads(8, 8, 1)]
+void main( uint3 DTid : SV_DispatchThreadID )
+{
+    //Set up the pixel position and color
+    float2 PixelXY = DTid.xy;
+    float3 PixelPos = FirstPixelPos + PixelXY.x * DeltaU + PixelXY.y * DeltaV;
+    float4 PixelColor = float4(0.f, 0.f, 0.f, 1.f);
+    const float SampleScaleFactor = 1.f / SampleCount;
+    
+    for (int i = 0; i < SampleCount; i++)
+    {   
+        RandomState State;
+        InitRandomState(State, PixelXY, i, ScreenSize.x, ScreenSize.y);
+        
+        float2 Offset = float2(RandomFloatInterval(State, 0.5f), RandomFloatInterval(State, 0.5f));
+        float3 CurrentSample = PixelPos + Offset.x * DeltaU + Offset.y * DeltaV;
+        float3 RayDir = normalize(CurrentSample - CameraPos);
+        Ray CurrentRay;
+        CurrentRay.Direction = RayDir;
+        CurrentRay.Origin = CameraPos;
+        
+        PixelColor += PerformPathTrace(CurrentRay, State);
+    }
+    
+    PixelColor *= SampleScaleFactor;
+    normalize(PixelColor);
+    OutputBuffer[DTid.xy] = PixelColor;
+}
+
+

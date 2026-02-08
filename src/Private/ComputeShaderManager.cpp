@@ -2,14 +2,14 @@
 #include "../Public/Camera.h"
 
 ComputeShaderManager::ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext, unsigned int ScreenWidth, unsigned int ScreenHeight ) : m_Device(Device), m_DeviceContext(DeviceContext), 
-m_CSConstantBuffer(nullptr), m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr), m_ObjectCount(0),
-m_Width(ScreenWidth), m_Height(ScreenHeight)
+m_CSConstantBuffer(nullptr), m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_ComputeOutputBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr), 
+m_ComputeOutputUAV(nullptr), m_ObjectCount(0), m_Width(ScreenWidth), m_Height(ScreenHeight)
 {
 }
 
 
 
-bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount)
+bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned int Depth, unsigned int SampleCount)
 {
 	HRESULT Result;
 	ID3DBlob* ShaderBlob = nullptr;
@@ -118,6 +118,30 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount)
 		return false;
 	}
 
+	D3D11_TEXTURE2D_DESC ComputeOutputBufferDesc;
+
+	ComputeOutputBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;//Later we have to copy this using GPU, so the format needs to match the back buffer
+	ComputeOutputBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+	ComputeOutputBufferDesc.CPUAccessFlags = 0;
+	ComputeOutputBufferDesc.Width = m_Width;
+	ComputeOutputBufferDesc.Height = m_Height;
+	ComputeOutputBufferDesc.SampleDesc.Count = 1;
+	ComputeOutputBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	ComputeOutputBufferDesc.ArraySize = 1;
+	ComputeOutputBufferDesc.MipLevels = 1;
+	ComputeOutputBufferDesc.MiscFlags = 0;
+
+	Result = m_Device->CreateTexture2D(&ComputeOutputBufferDesc, nullptr, &m_ComputeOutputBuffer);
+	if (FAILED(Result))
+	{
+		ShaderBlob->Release();
+		wchar_t ErrorMessage[128];
+		wsprintf(ErrorMessage, L"Failed to create compute output buffer! Error code: %04X", Result);
+		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		return false;
+	}
+
+
 	Result = m_Device->CreateShaderResourceView(m_SphereMaterialBuffer, nullptr, &m_MaterialSRV);
 	if (FAILED(Result))
 	{
@@ -128,7 +152,18 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount)
 		return false;
 	}
 
+	Result = m_Device->CreateUnorderedAccessView(m_ComputeOutputBuffer, nullptr, &m_ComputeOutputUAV);
+	if (FAILED(Result))
+	{
+		ShaderBlob->Release();
+		wchar_t ErrorMessage[128];
+		wsprintf(ErrorMessage, L"Failed to create sphere material SRV! Error code: %04X", Result);
+		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		return false;
+	}
 
+	m_MaxDepth = Depth;
+	m_SampleCount = SampleCount;
 	m_ObjectCount = ObjectCount;
 	ShaderBlob->Release();
 	ShaderBlob = nullptr;
@@ -162,14 +197,15 @@ bool ComputeShaderManager::SetShaderParams(XMFLOAT3& CameraPos, XMFLOAT3& Viewpo
 	GlobalBufferData->DeltaV = DeltaV;
 	GlobalBufferData->ObjectCount = m_ObjectCount;
 	GlobalBufferData->ScreenSize = XMUINT2(m_Width, m_Height);
-	GlobalBufferData->Padding = XMFLOAT2(0.0f, 0.0f);
+	GlobalBufferData->Depth = m_MaxDepth;
+	GlobalBufferData->SampleCount = m_SampleCount;
 
 	m_DeviceContext->Unmap(m_CSConstantBuffer, 0);
 
 	m_DeviceContext->CSSetConstantBuffers(0, 1, &m_CSConstantBuffer);
 
 	//Buffer for anti-alias offsets. We use the same 100(or more) random offsets for all the pixels
-
+	/*
 	SampleOffsetBufferType* SampleOffsetBufferData = nullptr;
 
 	Result = m_DeviceContext->Map(m_SampleOffsetBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
@@ -187,7 +223,7 @@ bool ComputeShaderManager::SetShaderParams(XMFLOAT3& CameraPos, XMFLOAT3& Viewpo
 
 	m_DeviceContext->Unmap(m_SampleOffsetBuffer, 0);
 
-	m_DeviceContext->CSSetConstantBuffers(1, 1, &m_SampleOffsetBuffer);
+	m_DeviceContext->CSSetConstantBuffers(1, 1, &m_SampleOffsetBuffer);*/
 
 	//Structured Buffers
 	SphereTransformBufferType* SphereTransformBufferData = nullptr;
@@ -229,6 +265,8 @@ bool ComputeShaderManager::SetShaderParams(XMFLOAT3& CameraPos, XMFLOAT3& Viewpo
 
 	m_DeviceContext->CSSetShaderResources(1, 1, &m_MaterialSRV);
 
+	//Set the output buffer for compute shader
+	m_DeviceContext->CSSetUnorderedAccessViews(0, 1, &m_ComputeOutputUAV, nullptr);
 
 	return true;
 }
@@ -267,9 +305,24 @@ ComputeShaderManager::~ComputeShaderManager()
 		m_SphereMaterialBuffer->Release();
 		m_SphereMaterialBuffer = nullptr;
 	}
+	if (m_ComputeOutputBuffer)
+	{
+		m_ComputeOutputBuffer->Release();
+		m_ComputeOutputBuffer = nullptr;
+	}
 	if (m_TransformSRV)
 	{
 		m_TransformSRV->Release();
 		m_TransformSRV = nullptr;
+	}
+	if (m_MaterialSRV)
+	{
+		m_MaterialSRV->Release();
+		m_MaterialSRV = nullptr;
+	}
+	if (m_ComputeOutputUAV)
+	{
+		m_ComputeOutputUAV->Release();
+		m_ComputeOutputUAV = nullptr;
 	}
 }

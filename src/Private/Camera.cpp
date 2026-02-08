@@ -121,31 +121,6 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 		}
 		
 	}
-	/*
-	std::vector<Ray> Cont;
-	Cont.reserve(m_MaxDepth);
-	std::stack<Ray, std::vector<Ray>> TraceStack(std::move(Cont));
-	int CurrentDepth = 0;
-	TraceStack.push(R);
-	while (!TraceStack.empty() && CurrentDepth < m_MaxDepth)
-	{
-		Ray CurrentRay = TraceStack.top();
-		TraceStack.pop();
-		if (World.Hit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord))
-		{
-			Vector3D DiffuseDirection = Vector3D::RandomUnitOnHemiSphere(TempHitRecord.HitNormal);
-			Ray NewRay = Ray(TempHitRecord.HitPoint, DiffuseDirection);
-			CurrentDepth++;
-			TraceStack.push(NewRay);
-		}
-		else
-		{
-			Vector3D UnitDirection = CurrentRay.Direction().Normalize();
-			float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-			PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
-			return std::pow(0.5f, CurrentDepth) * PixelColor;
-		}
-	}*/
 
 	return Color{ 0.f, 0.f, 0.f };
 }

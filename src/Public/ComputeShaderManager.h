@@ -17,7 +17,8 @@ struct GlobalBufferType
 	XMFLOAT3 DeltaV;
 	unsigned int ObjectCount;
 	XMUINT2 ScreenSize;
-	XMFLOAT2 Padding;
+	unsigned int Depth;
+	unsigned int SampleCount;
 };
 
 struct SampleOffsetBufferType
@@ -37,13 +38,12 @@ struct SphereMaterialBufferType
 	uint32_t Type;
 };
 
-
 class ComputeShaderManager
 {
 public:
 	ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext, unsigned int ScreenWidth = 1920, unsigned int ScreenHeight = 1080);
 	~ComputeShaderManager();
-	bool InitializeShaders(unsigned int ObjectCount);
+	bool InitializeShaders(unsigned int ObjectCount, unsigned int Depth, unsigned int SampleCount);
 	bool SetShaderParams(XMFLOAT3& CameraPos, XMFLOAT3& ViewportUpperLeft, XMFLOAT3& FirstPixelPos, XMFLOAT3& DeltaU, XMFLOAT3& DeltaV, const XMFLOAT2* SampleOffset, 
 		const SphereTransformBufferType* SphereTransforms, const SphereMaterialBufferType* SphereMaterials);
 	void DispatchShader();
@@ -59,9 +59,13 @@ private:
 	ID3D11Buffer* m_SampleOffsetBuffer;
 	ID3D11Buffer* m_SphereTransformBuffer;
 	ID3D11Buffer* m_SphereMaterialBuffer;
+	ID3D11Texture2D* m_ComputeOutputBuffer;
 	ID3D11ShaderResourceView* m_TransformSRV;
 	ID3D11ShaderResourceView* m_MaterialSRV;
+	ID3D11UnorderedAccessView* m_ComputeOutputUAV;
 	unsigned int m_ObjectCount;
 	unsigned int m_Width;
 	unsigned int m_Height;
+	unsigned int m_MaxDepth;
+	unsigned int m_SampleCount;
 };
