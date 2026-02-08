@@ -1,7 +1,7 @@
 #include "../Public/D3D11Class.h"
 #include <vector>
 
-D3D11Class::D3D11Class(HWND Hwnd, int Width, int Height) : m_Device(nullptr), m_DeviceContext(nullptr), m_SwapChain(nullptr), m_RasterState(nullptr), m_Hwnd(Hwnd), 
+D3D11Class::D3D11Class(HWND Hwnd, int Width, int Height) : m_Device(nullptr), m_DeviceContext(nullptr), m_SwapChain(nullptr), m_BackBuffer(nullptr), m_RasterState(nullptr), m_Hwnd(Hwnd), 
 m_Width(Width), m_Height(Height), m_RTV(nullptr)
 {
 	
@@ -155,8 +155,7 @@ bool D3D11Class::InitializeD3D11()
 	}
 
 	//Create the back buffer for swap chain
-	ID3D11Texture2D* BackBufferPtr;
-	Result = m_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)(&BackBufferPtr));
+	Result = m_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)(&m_BackBuffer));
 	if (FAILED(Result))
 	{
 		wchar_t ErrorMessage[128];
@@ -166,7 +165,7 @@ bool D3D11Class::InitializeD3D11()
 	}
 
 	//Create the RTV for the swap chain back buffer
-	Result = m_Device->CreateRenderTargetView(BackBufferPtr, nullptr, &m_RTV);
+	Result = m_Device->CreateRenderTargetView(m_BackBuffer, nullptr, &m_RTV);
 	if (FAILED(Result))
 	{
 		wchar_t ErrorMessage[128];
@@ -174,10 +173,6 @@ bool D3D11Class::InitializeD3D11()
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
 		return false;
 	}
-
-	//Release the back buffer ptr, COM uses reference couting, so we are not actually releasing the back buffer here
-	BackBufferPtr->Release();
-	BackBufferPtr = nullptr;
 
 	m_DeviceContext->OMSetRenderTargets(1, &m_RTV, nullptr);
 
@@ -204,9 +199,6 @@ bool D3D11Class::InitializeD3D11()
 	m_Viewport.MaxDepth = 1.f;
 
 	m_DeviceContext->RSSetViewports(1, &m_Viewport);
-
-
-
 
 	return true;
 }
@@ -251,6 +243,11 @@ D3D11Class::~D3D11Class()
 	{
 		m_SwapChain->Release();
 		m_SwapChain = nullptr;
+	}
+	if(m_BackBuffer)
+	{
+		m_BackBuffer->Release();
+		m_BackBuffer = nullptr;
 	}
 	if (m_RasterState)
 	{

@@ -170,7 +170,7 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 	return true;
 }
 
-bool ComputeShaderManager::SetShaderParams(XMFLOAT3& CameraPos, XMFLOAT3& ViewportUpperLeft, XMFLOAT3& FirstPixelPos, XMFLOAT3& DeltaU, XMFLOAT3& DeltaV, const XMFLOAT2* SampleOffset,
+bool ComputeShaderManager::SetShaderParams(const XMFLOAT3& CameraPos, const XMFLOAT3& ViewportUpperLeft, const XMFLOAT3& FirstPixelPos, const XMFLOAT3& DeltaU, const XMFLOAT3& DeltaV,
 	const SphereTransformBufferType* SphereTransforms, const SphereMaterialBufferType* SphereMaterials)
 {
 	HRESULT Result;
@@ -273,7 +273,7 @@ bool ComputeShaderManager::SetShaderParams(XMFLOAT3& CameraPos, XMFLOAT3& Viewpo
 
 void ComputeShaderManager::DispatchShader()
 {
-	
+	m_DeviceContext->Dispatch(m_Width / 8, m_Height / 8, 1);
 }
 
 

@@ -18,6 +18,9 @@ public:
 	{
 		m_MaxDepth = InMaxDepth;
 	}
+	int GetSampleCount() const { return m_SamplesPerPixel; }
+	int GetMaxDepth() const { return m_MaxDepth; }
+
 public:
 	//These variables can be set in the constructor, I just don't want to crowd the constructor with tons of parameters
 	//A simple way to solve it would be packing all these camera info into a struct so we can pass it around

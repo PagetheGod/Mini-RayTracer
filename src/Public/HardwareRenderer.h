@@ -8,6 +8,10 @@
 #include "Camera.h"
 #include <strsafe.h>
 
+
+class ComputeShaderManager;
+
+
 class HardwareRenderer
 {
 public:
@@ -15,6 +19,10 @@ public:
 	~HardwareRenderer();
 	bool Intialize(HWND hWnd);
 	void GetShaderBuffers();
+	bool RenderScene();
+
+private:
+	void CreateWorld();
 
 private:
 	int m_Width;
@@ -29,7 +37,10 @@ private:
 	Camera m_Camera;
 	std::unique_ptr<D3D11Class> m_D3D11;
 	std::unique_ptr<HittableList> m_World;
+	std::unique_ptr<ComputeShaderManager> m_ComputeShaderManager;
 	HWND m_hWnd;
+	ID3D11Device* m_Device;
+	ID3D11DeviceContext* m_DeviceContext;
 	SphereTransformBufferType* m_CSTransformBuffer;
 	SphereMaterialBufferType* m_CSMaterialBuffer;
 };

@@ -82,7 +82,9 @@ public:
 	void VAddSphere(const SphereObjectData& Data, const MaterialScatterData& MatData, MaterialType MatType);
 	SphereTransformBufferType* GetCSTransformBuffer();
 	SphereMaterialBufferType* GetCSMaterialBuffer();
-
+	unsigned int GetNumObjects() const { return m_NumObjects; }
+public:
+	
 private:
 	std::vector<std::shared_ptr<Hittable>> m_Objects;
 	SphereTransformComponent m_SphereTransforms;
@@ -90,5 +92,5 @@ private:
 	SphereTransformBufferType* m_CSTransformBuffer;
 	SphereMaterialBufferType* m_CSMaterialBuffer;
 	VSphereMatComponent m_VSphereMatComponent;
-	size_t m_NumObjects = 0;
+	unsigned int m_NumObjects = 0;
 };

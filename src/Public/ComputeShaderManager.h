@@ -44,10 +44,11 @@ public:
 	ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext, unsigned int ScreenWidth = 1920, unsigned int ScreenHeight = 1080);
 	~ComputeShaderManager();
 	bool InitializeShaders(unsigned int ObjectCount, unsigned int Depth, unsigned int SampleCount);
-	bool SetShaderParams(XMFLOAT3& CameraPos, XMFLOAT3& ViewportUpperLeft, XMFLOAT3& FirstPixelPos, XMFLOAT3& DeltaU, XMFLOAT3& DeltaV, const XMFLOAT2* SampleOffset, 
+	bool SetShaderParams(const XMFLOAT3& CameraPos, const XMFLOAT3& ViewportUpperLeft, const XMFLOAT3& FirstPixelPos, const XMFLOAT3& DeltaU, const XMFLOAT3& DeltaV,
 		const SphereTransformBufferType* SphereTransforms, const SphereMaterialBufferType* SphereMaterials);
 	void DispatchShader();
 	
+	ID3D11Texture2D* GetComputeOutputBuffer() const { return m_ComputeOutputBuffer; }
 
 public:
 	
