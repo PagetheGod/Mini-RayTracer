@@ -21,16 +21,14 @@ public:
 	ID3D11Device* GetDevice() const { return m_Device; }
 	ID3D11DeviceContext* GetDeviceContext() const { return m_DeviceContext; }
 	//This is not const because we will use CopyResources to copy the compute shader output to the back buffer
-	ID3D11Buffer* GetBackBuffer() { return m_BackBuffer; }
+	ID3D11Texture2D* GetBackBuffer() { return m_BackBuffer; }
 private:
 	ID3D11Device* m_Device;
 	ID3D11DeviceContext* m_DeviceContext;
 	IDXGISwapChain* m_SwapChain;
-	ID3D11Buffer* m_BackBuffer;
+	ID3D11Texture2D* m_BackBuffer;
 	ID3D11RasterizerState* m_RasterState;
 	ID3D11RenderTargetView* m_RTV;
-	ID3D11ShaderResourceView* m_SRV;
-	ID3D11UnorderedAccessView* m_UAV;
 	D3D11_VIEWPORT m_Viewport;
 	HWND m_Hwnd;
 	unsigned int m_Width;

@@ -16,6 +16,8 @@ HittableList::HittableList(std::shared_ptr<Hittable> Object)
 	m_Objects.push_back(Object);
 }
 
+
+
 bool HittableList::Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord)
 {
 	bool HasHit = false;
@@ -123,6 +125,11 @@ void HittableList::VAddSphere(const SphereObjectData& Data, const MaterialScatte
 
 SphereTransformBufferType* HittableList::GetCSTransformBuffer()
 {
+	if (m_CSTransformBuffer)
+	{
+		return m_CSTransformBuffer;
+	}
+
 	m_CSTransformBuffer = new SphereTransformBufferType[m_NumObjects];
 	for (size_t i = 0; i < m_NumObjects; i++)
 	{
@@ -135,6 +142,10 @@ SphereTransformBufferType* HittableList::GetCSTransformBuffer()
 
 SphereMaterialBufferType* HittableList::GetCSMaterialBuffer()
 {
+	if (m_CSMaterialBuffer)
+	{
+		return m_CSMaterialBuffer;
+	}
 	m_CSMaterialBuffer = new SphereMaterialBufferType[m_NumObjects];
 	for (size_t i = 0; i < m_NumObjects; i++)
 	{
@@ -146,3 +157,10 @@ SphereMaterialBufferType* HittableList::GetCSMaterialBuffer()
 	return m_CSMaterialBuffer;
 }
 
+HittableList::~HittableList()
+{
+	delete[] m_CSTransformBuffer;
+	m_CSMaterialBuffer = nullptr;
+	delete[] m_CSMaterialBuffer;
+	m_CSMaterialBuffer = nullptr;
+}

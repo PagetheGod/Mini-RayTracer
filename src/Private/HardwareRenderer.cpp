@@ -22,6 +22,11 @@ bool HardwareRenderer::Intialize(HWND hWnd)
 		return false;
 	}
 
+
+	//Remember that our camera center is also the center of our coordinate system
+	m_Camera = Camera();
+	m_Camera.SetSampleCount(200);
+	m_Camera.SetMaxDepth(25);
 	m_Device = m_D3D11->GetDevice();
 	m_DeviceContext = m_D3D11->GetDeviceContext();
 
@@ -38,10 +43,7 @@ bool HardwareRenderer::Intialize(HWND hWnd)
 	}
 
 
-	//Remember that our camera center is also the center of our coordinate system
-	m_Camera = Camera();
-	m_Camera.SetSampleCount(500);
-	m_Camera.SetMaxDepth(50);
+	
 
 	float VFovAngle = Utility::DegreeToRadian(m_Camera.VerticalFOV);
 	float h = std::tan(VFovAngle / 2.f);
@@ -91,9 +93,22 @@ bool HardwareRenderer::RenderScene()
 	}
 
 	m_ComputeShaderManager->DispatchShader();
-
+	FillBackBuffer();
+	m_D3D11->PresentScene();
 	return Result;
 }
+
+void HardwareRenderer::FillBackBuffer()
+{
+	m_DeviceContext->CopyResource(m_D3D11->GetBackBuffer(), m_ComputeShaderManager->GetComputeOutputBuffer());
+}
+
+void HardwareRenderer::ClearBackground()
+{
+	m_D3D11->ClearBackground();
+}
+
+
 
 void HardwareRenderer::GetShaderBuffers()
 {
@@ -227,15 +242,9 @@ void HardwareRenderer::CreateWorld()
 
 HardwareRenderer::~HardwareRenderer()
 {
-	if (m_CSMaterialBuffer)
-	{
-		delete[] m_CSMaterialBuffer;
-		m_CSMaterialBuffer = nullptr;
-	}
-	if (m_CSTransformBuffer)
-	{
-		delete[] m_CSTransformBuffer;
-		m_CSTransformBuffer = nullptr;
-	}
+	m_Device = nullptr;
+	m_DeviceContext = nullptr;
+	m_CSMaterialBuffer = nullptr;
+	m_CSTransformBuffer = nullptr;
 }
 

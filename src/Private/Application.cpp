@@ -1,9 +1,9 @@
 #include "../Public/Application.h"
 #include <string.h>
 #include "../Public/SoftwareRenderer.h"
+#include "../Public/HardwareRenderer.h"
 
-
-Application::Application() : m_WindowHandle(NULL), m_WindowClass(NULL)
+Application::Application(const RenderType RendererType) : m_WindowHandle(NULL), m_WindowClass(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr), m_RendererType(RendererType)
 {
 
 }
@@ -69,12 +69,25 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 	}
 
 	//For software rendering, especially for a ppm output, we only need to pass the width
-	m_Renderer = new SoftwareRenderer(Width, Height, AspectRatio);
-	bool Result = m_Renderer->Initialize("output.ppm", m_WindowHandle);
-	if (!Result)
+	if (m_RendererType == RenderType::Software)
 	{
-		return false;
+		m_SoftwareRenderer = std::make_unique<SoftwareRenderer>(Width, Height, AspectRatio);
+		bool Result = m_SoftwareRenderer->Initialize("output.ppm", m_WindowHandle);
+		if (!Result)
+		{
+			return false;
+		}
 	}
+	else
+	{
+		m_HardwareRenderer = std::make_unique<HardwareRenderer>(Width, Height, AspectRatio);
+		bool Result = m_HardwareRenderer->Intialize(m_WindowHandle);
+		if (!Result)
+		{
+			return false;
+		}
+	}
+	
 
 	ShowWindow(m_WindowHandle, InpCmdShow);
 
@@ -144,7 +157,15 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 			}
 			else if (wParam == VK_RETURN)
 			{
-				m_Renderer->RenderFrameBuffer();
+				if (m_RendererType == RenderType::Software)
+				{
+					m_SoftwareRenderer->RenderFrameBuffer();
+				}
+				else
+				{
+					m_HardwareRenderer->RenderScene();
+				}
+				
 			}
 			return 0;
 		}
@@ -152,12 +173,23 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		{
 			if (m_IsFirstPaint)
 			{
-				m_Renderer->ClearWindow();
+				if (m_RendererType == RenderType::Software)
+				{
+					m_SoftwareRenderer->ClearWindow();
+				}
+				else
+				{
+					m_HardwareRenderer->ClearBackground();
+				}
 				m_IsFirstPaint = false;
 			}
 			else
 			{
-				m_Renderer->RenderToWindow();
+				if (m_RendererType == RenderType::Software)
+				{
+					m_SoftwareRenderer->RenderToWindow();
+				}
+				
 			}
 			return 0;
 		}
@@ -173,6 +205,13 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 void Application::Shutdown()
 {
 	m_WindowHandle = NULL;
-	m_Renderer->Shutdown();
-	delete m_Renderer;
+	if (m_SoftwareRenderer)
+	{
+		m_SoftwareRenderer->Shutdown();
+	}
+	
+}
+
+Application::~Application()
+{
 }

@@ -20,6 +20,8 @@ public:
 	bool Intialize(HWND hWnd);
 	void GetShaderBuffers();
 	bool RenderScene();
+	void FillBackBuffer();
+	void ClearBackground();
 
 private:
 	void CreateWorld();

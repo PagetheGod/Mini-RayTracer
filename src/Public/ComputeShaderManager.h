@@ -11,9 +11,13 @@ using namespace DirectX;
 struct GlobalBufferType
 {
 	XMFLOAT3 CameraPos;
+	unsigned int Padding1 = 0;
 	XMFLOAT3 ViewportUpperLeft;
+	unsigned int Padding2 = 0;
 	XMFLOAT3 FirstPixelPos;
+	unsigned int Padding3 = 0;
 	XMFLOAT3 DeltaU;
+	unsigned int Padding4 = 0;
 	XMFLOAT3 DeltaV;
 	unsigned int ObjectCount;
 	XMUINT2 ScreenSize;
@@ -48,7 +52,7 @@ public:
 		const SphereTransformBufferType* SphereTransforms, const SphereMaterialBufferType* SphereMaterials);
 	void DispatchShader();
 	
-	ID3D11Texture2D* GetComputeOutputBuffer() const { return m_ComputeOutputBuffer; }
+	ID3D11Texture2D* GetComputeOutputBuffer() { return m_ComputeOutputBuffer; }
 
 public:
 	

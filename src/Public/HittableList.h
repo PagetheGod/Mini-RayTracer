@@ -73,6 +73,7 @@ class HittableList : public Hittable
 public:
 	HittableList();
 	HittableList(std::shared_ptr<Hittable> Object);
+	~HittableList();
 	virtual bool Hit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord) override;
 	//This functions uses the sphere data arrays in the hittablelist class to perform hit detection. Potentially bad name
 	bool VBulkHit(const Ray& R, Interval HitInterval, HitRecord& OutHitRecord, MaterialScatterData& OutScatterData);

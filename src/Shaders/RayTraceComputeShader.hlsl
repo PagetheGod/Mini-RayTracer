@@ -1,9 +1,13 @@
 cbuffer GlobalBuffer
 {
     float3 CameraPos;
+    uint Padding1;
     float3 ViewportUpperLeft;
+    uint Padding2;
     float3 FirstPixelPos;
+    uint Padding3;
     float3 DeltaU;
+    uint Padding4;
     float3 DeltaV;
     uint ObjectCount;
     uint2 ScreenSize; //Screen width, height
@@ -53,7 +57,7 @@ struct RandomState
 
 StructuredBuffer<SphereTransformType> SphereTransformBuffer : register(t0);
 StructuredBuffer<SphereMaterialType> SphereMaterialBuffer : register(t1);
-RWTexture2D<uint> OutputBuffer : register(u0);
+RWTexture2D<float4> OutputBuffer : register(u0);
 
 //Let's try the frequently suggested 8x8(64-pixel tile) render.
 //The numthreads can be expressed in 3D, 2D, or 1D manner, which is why it has three components
@@ -147,11 +151,11 @@ bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const flo
     }
     
     float SqrtD = sqrt(Discriminant);
-    float Root = (h - SqrtD) / a;
+    float Root = (-h - SqrtD) / a;
     
     if (Root < Min || Root > Max)
     {
-        Root = (h + SqrtD) / a;
+        Root = (- h + SqrtD) / a;
         if (Root < Min || Root > Max)
         {
             return false;
@@ -160,10 +164,11 @@ bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const flo
     
     OutHitRecord.HitPoint = RayOrigin + Root * RayDirection;
     OutHitRecord.t = Root;
+    OutHitRecord.MaterialType = 0; //Default to lambertian because we need to fully initialize. The actual material type will be set in the HitWorld function.
     OutHitRecord.Normal = (OutHitRecord.HitPoint - Center) / Radius; //Outward normal
     OutHitRecord.IsFrontFace = dot(RayDirection, OutHitRecord.Normal) < 0.f;
     OutHitRecord.Normal = OutHitRecord.IsFrontFace ? OutHitRecord.Normal : -OutHitRecord.Normal;
-    
+    return true;
 }
 
 
@@ -171,7 +176,7 @@ bool HitWorld(const Ray R, float Min, float Max, inout HitRecord OutHitRecord, i
 {
     bool HasHit = false;
     float ClosestSoFar = Max;
-    for (int i = 0; i < ObjectCount; i++)
+    for (uint i = 0; i < ObjectCount; i++)
     {
         if (SphereHit(R, Min, ClosestSoFar, SphereTransformBuffer[i].SphereCenter, SphereTransformBuffer[i].Radius, OutHitRecord))
         {
@@ -179,6 +184,7 @@ bool HitWorld(const Ray R, float Min, float Max, inout HitRecord OutHitRecord, i
             ClosestSoFar = OutHitRecord.t;
             OutScatterData.Attenuation = SphereMaterialBuffer[i].Albedo;
             OutScatterData.FuzzOrRI = SphereMaterialBuffer[i].FuzzOrRI;
+            OutHitRecord.MaterialType = SphereMaterialBuffer[i].Type;
         }
 
     }
@@ -264,7 +270,7 @@ float4 PerformPathTrace(const Ray R, inout RandomState RandState)
     Ray CurrentRay = R;
     float4 TotalAttenuation = float4(1.f, 1.f, 1.f, 1.f);
     
-    for (int i = 0; i < Depth; i++)
+    for (uint i = 0; i < Depth; i++)
     {
         if (HitWorld(CurrentRay, 0.001f, 1.#INF, TempHitRecord, TempScatterData))
         {
@@ -307,7 +313,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
     float4 PixelColor = float4(0.f, 0.f, 0.f, 1.f);
     const float SampleScaleFactor = 1.f / SampleCount;
     
-    for (int i = 0; i < SampleCount; i++)
+    for (uint i = 0; i < SampleCount; i++)
     {   
         RandomState State;
         InitRandomState(State, PixelXY, i, ScreenSize.x, ScreenSize.y);
@@ -323,7 +329,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
     }
     
     PixelColor *= SampleScaleFactor;
-    normalize(PixelColor);
+    PixelColor = saturate(PixelColor);
     OutputBuffer[DTid.xy] = PixelColor;
 }
 

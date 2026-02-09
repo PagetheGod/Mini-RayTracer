@@ -13,6 +13,9 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 {
 	HRESULT Result;
 	ID3DBlob* ShaderBlob = nullptr;
+	m_MaxDepth = Depth;
+	m_SampleCount = SampleCount;
+	m_ObjectCount = ObjectCount;
 	Result = D3DReadFileToBlob(L"RayTraceComputeShader.cso", &ShaderBlob);
 	if (FAILED(Result))
 	{
@@ -21,7 +24,7 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
 		return false;
 	}
-	Result = m_Device->CreateComputeShader(ShaderBlob, sizeof(ShaderBlob), nullptr, &m_ComputeShader);
+	Result = m_Device->CreateComputeShader(ShaderBlob->GetBufferPointer(), ShaderBlob->GetBufferSize(), nullptr, &m_ComputeShader);
 	if (FAILED(Result))
 	{
 		ShaderBlob->Release();
@@ -31,14 +34,17 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 		return false;
 	}
 
+	
+
 	D3D11_BUFFER_DESC GlobalBufferDesc{};
 
-	GlobalBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	GlobalBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	GlobalBufferDesc.ByteWidth = sizeof(GlobalBufferType);
 	GlobalBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	GlobalBufferDesc.CPUAccessFlags = 0;
+	GlobalBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; 
 	GlobalBufferDesc.MiscFlags = 0;
 	GlobalBufferDesc.StructureByteStride = 0;
+
 
 	Result = m_Device->CreateBuffer(&GlobalBufferDesc, nullptr, &m_CSConstantBuffer);
 	if (FAILED(Result))
@@ -50,32 +56,13 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 		return false;
 	}
 
-	D3D11_BUFFER_DESC SampleOffsetBufferDesc{};
-
-	SampleOffsetBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	SampleOffsetBufferDesc.ByteWidth = sizeof(SampleOffsetBufferDesc);
-	SampleOffsetBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	SampleOffsetBufferDesc.CPUAccessFlags = 0;
-	SampleOffsetBufferDesc.MiscFlags = 0;
-	SampleOffsetBufferDesc.StructureByteStride = 0;
-
-	Result = m_Device->CreateBuffer(&SampleOffsetBufferDesc, nullptr, &m_SampleOffsetBuffer);
-	if (FAILED(Result))
-	{
-		ShaderBlob->Release();
-		wchar_t ErrorMessage[128];
-		wsprintf(ErrorMessage, L"Failed to create sphere global buffer! Error code: %04X", Result);
-		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
-		return false;
-	}
-
 	D3D11_BUFFER_DESC SphereTransformBufferDesc;
 	
-	SphereTransformBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	SphereTransformBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	SphereTransformBufferDesc.ByteWidth = sizeof(SphereTransformBufferType) * m_ObjectCount;
 	SphereTransformBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	SphereTransformBufferDesc.CPUAccessFlags = 0;
-	SphereTransformBufferDesc.MiscFlags = 0;
+	SphereTransformBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	SphereTransformBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	SphereTransformBufferDesc.StructureByteStride = sizeof(SphereTransformBufferType);
 
 	Result = m_Device->CreateBuffer(&SphereTransformBufferDesc, nullptr, &m_SphereTransformBuffer);
@@ -101,11 +88,11 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 
 	D3D11_BUFFER_DESC SphereMaterialBufferDesc;
 
-	SphereMaterialBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	SphereMaterialBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	SphereMaterialBufferDesc.ByteWidth = sizeof(SphereMaterialBufferType) * m_ObjectCount;
 	SphereMaterialBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	SphereMaterialBufferDesc.CPUAccessFlags = 0;
-	SphereMaterialBufferDesc.MiscFlags = 0;
+	SphereMaterialBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	SphereMaterialBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	SphereMaterialBufferDesc.StructureByteStride = sizeof(SphereMaterialBufferType);
 
 	Result = m_Device->CreateBuffer(&SphereMaterialBufferDesc, nullptr, &m_SphereMaterialBuffer);
@@ -118,7 +105,7 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 		return false;
 	}
 
-	D3D11_TEXTURE2D_DESC ComputeOutputBufferDesc;
+	D3D11_TEXTURE2D_DESC ComputeOutputBufferDesc{};
 
 	ComputeOutputBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;//Later we have to copy this using GPU, so the format needs to match the back buffer
 	ComputeOutputBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
@@ -141,7 +128,7 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 		return false;
 	}
 
-
+	
 	Result = m_Device->CreateShaderResourceView(m_SphereMaterialBuffer, nullptr, &m_MaterialSRV);
 	if (FAILED(Result))
 	{
@@ -162,9 +149,7 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 		return false;
 	}
 
-	m_MaxDepth = Depth;
-	m_SampleCount = SampleCount;
-	m_ObjectCount = ObjectCount;
+	
 	ShaderBlob->Release();
 	ShaderBlob = nullptr;
 	return true;
@@ -239,7 +224,7 @@ bool ComputeShaderManager::SetShaderParams(const XMFLOAT3& CameraPos, const XMFL
 
 	SphereTransformBufferData = static_cast<SphereTransformBufferType*>(MappedResource.pData);
 
-	memcpy(SphereTransformBufferData, SphereTransforms, sizeof(SphereTransformBufferData) * m_ObjectCount);
+	memcpy(SphereTransformBufferData, SphereTransforms, sizeof(SphereTransformBufferType) * m_ObjectCount);
 
 	m_DeviceContext->Unmap(m_SphereTransformBuffer, 0);
 
@@ -272,7 +257,8 @@ bool ComputeShaderManager::SetShaderParams(const XMFLOAT3& CameraPos, const XMFL
 }
 
 void ComputeShaderManager::DispatchShader()
-{
+{	
+	m_DeviceContext->CSSetShader(m_ComputeShader, nullptr, 0);
 	m_DeviceContext->Dispatch(m_Width / 8, m_Height / 8, 1);
 }
 
@@ -280,26 +266,10 @@ void ComputeShaderManager::DispatchShader()
 
 ComputeShaderManager::~ComputeShaderManager()
 {
-	if (m_Device)
-	{
-		m_Device->Release();
-		m_Device = nullptr;
-	}
-	if (m_DeviceContext)
-	{
-		m_DeviceContext->Release();
-		m_DeviceContext = nullptr;
-	}
-	if (m_CSConstantBuffer)
-	{
-		m_CSConstantBuffer->Release();
-		m_CSConstantBuffer = nullptr;
-	}
-	if (m_SphereTransformBuffer)
-	{
-		m_SphereTransformBuffer->Release();
-		m_SphereTransformBuffer = nullptr;
-	}
+	//We never called AddRef() here so we do not call Release here
+	m_CSConstantBuffer = nullptr;
+	m_SphereTransformBuffer = nullptr;
+	
 	if (m_SphereMaterialBuffer)
 	{
 		m_SphereMaterialBuffer->Release();

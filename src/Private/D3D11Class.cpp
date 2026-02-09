@@ -136,7 +136,7 @@ bool D3D11Class::InitializeD3D11()
 		NULL,
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
-		0,
+		D3D11_CREATE_DEVICE_DEBUG,
 		&FeatureLevel,
 		1,
 		D3D11_SDK_VERSION,
@@ -210,9 +210,8 @@ void D3D11Class::ClearBackground()
 	Color[1] = 0.f; 
 	Color[2] = 0.f; 
 	Color[3] = 1.f;
-
 	m_DeviceContext->ClearRenderTargetView(m_RTV, Color);
-
+	PresentScene();
 }
 
 void D3D11Class::PresentScene()

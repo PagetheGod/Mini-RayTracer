@@ -9,14 +9,14 @@
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) 
 {
 	bool Result;
-	Application App = Application();
+	Application App = Application(RenderType::Hardware);
 	Result = App.Initialize(hInstance, nCmdShow, 1920, 1080);
 	if (!Result)
 	{
 		return -1;
+		App.Shutdown();
 	}
 	App.Run();
 	App.Shutdown();
-
 	return 0;
 }
