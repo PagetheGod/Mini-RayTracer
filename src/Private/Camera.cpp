@@ -66,58 +66,26 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 	Color TotalAttenuation = Color{1.f, 1.f, 1.f};
 	for (int i = 0; i < m_MaxDepth; i++)
 	{
-
-		if (!USEBULKHIT)
+		if (World.VBulkHit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord, MatScatterData))
 		{
-			if (World.Hit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord))
+			Ray ScatteredRay;
+			Color Attenuation;
+			if (VMaterial::DispatchScatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay, MatScatterData, TempHitRecord.VHitMaterial))
 			{
-				/*
-				* Lambertian reflection - light is more likely to bounce in directions close to normal
-				* So we add a random unit vector to the normal. To get a random bounce on the unit tangent sphere
-				*/
-				Ray ScatteredRay;
-				Color Attenuation;
-				if (TempHitRecord.HitMaterial->Scatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay))
-				{
-					CurrentRay = ScatteredRay;
-					TotalAttenuation = TotalAttenuation * Attenuation;
-				}
-				else
-				{
-					return Color(0.f, 0.f, 0.f);
-				}
+				CurrentRay = ScatteredRay;
+				TotalAttenuation = TotalAttenuation * Attenuation;
 			}
 			else
 			{
-				Vector3D UnitDirection = CurrentRay.Direction().Normalize();
-				float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-				PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
-				return TotalAttenuation * PixelColor;
+				return Color(0.f, 0.f, 0.f);
 			}
 		}
 		else
 		{
-			if (World.VBulkHit(CurrentRay, Interval(0.001f, Constants::g_Infinity), TempHitRecord, MatScatterData))
-			{
-				Ray ScatteredRay;
-				Color Attenuation;
-				if (VMaterial::DispatchScatter(CurrentRay, TempHitRecord, Attenuation, ScatteredRay, MatScatterData, TempHitRecord.VHitMaterial))
-				{
-					CurrentRay = ScatteredRay;
-					TotalAttenuation = TotalAttenuation * Attenuation;
-				}
-				else
-				{
-					return Color(0.f, 0.f, 0.f);
-				}
-			}
-			else
-			{
-				Vector3D UnitDirection = CurrentRay.Direction().Normalize();
-				float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-				PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
-				return TotalAttenuation * PixelColor;
-			}
+			Vector3D UnitDirection = CurrentRay.Direction().Normalize();
+			float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
+			PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
+			return TotalAttenuation * PixelColor;
 		}
 		
 	}

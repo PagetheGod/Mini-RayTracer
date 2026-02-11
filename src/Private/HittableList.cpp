@@ -160,7 +160,7 @@ SphereMaterialBufferType* HittableList::GetCSMaterialBuffer()
 HittableList::~HittableList()
 {
 	delete[] m_CSTransformBuffer;
-	m_CSMaterialBuffer = nullptr;
+	m_CSTransformBuffer = nullptr;
 	delete[] m_CSMaterialBuffer;
 	m_CSMaterialBuffer = nullptr;
 }

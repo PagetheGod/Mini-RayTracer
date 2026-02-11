@@ -138,7 +138,7 @@ bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const flo
 {
     float3 RayOrigin = R.Origin;
     float3 RayDirection = R.Direction;
-    float3 RayOriToCenter = RayOrigin - Center;
+    float3 RayOriToCenter = Center - RayOrigin;
     
     float a = dot(RayDirection, RayDirection);
     float h = dot(RayDirection, RayOriToCenter);
@@ -151,11 +151,11 @@ bool SphereHit(const Ray R, float Min, float Max, const float3 Center, const flo
     }
     
     float SqrtD = sqrt(Discriminant);
-    float Root = (-h - SqrtD) / a;
+    float Root = (h - SqrtD) / a;
     
     if (Root < Min || Root > Max)
     {
-        Root = (- h + SqrtD) / a;
+        Root = (h + SqrtD) / a;
         if (Root < Min || Root > Max)
         {
             return false;

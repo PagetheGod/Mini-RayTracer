@@ -174,32 +174,6 @@ void SoftwareRenderer::RenderFrameBuffer()
 				return i;
 			}));
 		}
-		else
-		{
-			//This logic will be removed in the future. Right now it's just here for references.
-			for (int j = 0; j < m_Width; j++)
-			{
-				Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
-				Vector3D RayDirection = PixelPos - CameraCenter;
-				Ray CurrentRay = Ray(CameraCenter, RayDirection);
-
-				Color PixelColor = Color(0.f, 0.f, 0.f);
-				PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
-				//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
-				size_t PixelIndex = (i * m_Width + j) * 4;
-				unsigned char AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
-				unsigned char AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
-				unsigned char AdjustedBlue = (unsigned char)(255.999f * PixelColor.B());
-
-				m_FrameBuffer[PixelIndex] = AdjustedBlue;
-				m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
-				m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
-			}
-			//We send a draw call after every scanline
-			InvalidateRect(m_hWnd, nullptr, false);
-			UpdateWindow(m_hWnd);
-		}
-		
 	}
 	if (MULTITHREADED)
 	{
@@ -245,118 +219,64 @@ void SoftwareRenderer::CreateWorld()
 	* For the bubble, we need to remember that the RI of a surface can be interpreted as the RI of itself divided by the enclosing object
 	* Therefore, we have 1.f(air bubble) / 1.5f(glass layer)
 	*/
-	if (USEBULKHIT)
+	m_World = std::make_unique<HittableList>();
+	MaterialScatterData MatScatterData(0.f, Color(0.5f, 0.5f, 0.5f)) ;
+	m_World->VAddSphere(SphereObjectData(Point3D(0.f, -1000.f, 0.f), 1000.f), MatScatterData, MaterialType::Lambertian);
+	for (int a = -11; a < 11; a++)
 	{
-		m_World = std::make_unique<HittableList>();
-		MaterialScatterData MatScatterData(0.f, Color(0.5f, 0.5f, 0.5f)) ;
-		m_World->VAddSphere(SphereObjectData(Point3D(0.f, -1000.f, 0.f), 1000.f), MatScatterData, MaterialType::Lambertian);
-		for (int a = -11; a < 11; a++)
+		for (int b = -11; b < 11; b++)
 		{
-			for (int b = -11; b < 11; b++)
+			SphereObjectData SphereData;
+			float ChooseMat = Utility::RandomFloat();
+			Point3D SphereCenter(a + 0.9f * Utility::RandomFloat(), 0.2f, b + 0.9f * Utility::RandomFloat());
+
+			if ((SphereCenter - Point3D(4.f, 0.2f, 0.f)).Length() > 0.9f)
 			{
-				SphereObjectData SphereData;
-				float ChooseMat = Utility::RandomFloat();
-				Point3D SphereCenter(a + 0.9f * Utility::RandomFloat(), 0.2f, b + 0.9f * Utility::RandomFloat());
+				std::shared_ptr<Material> SphereMat;
 
-				if ((SphereCenter - Point3D(4.f, 0.2f, 0.f)).Length() > 0.9f)
+				if (ChooseMat < 0.8f)
 				{
-					std::shared_ptr<Material> SphereMat;
-
-					if (ChooseMat < 0.8f)
-					{
-						// diffuse
-						Color Albedo = Color::RandomVector() * Color::RandomVector();
-						MaterialScatterData MatScatterData;
-						MatScatterData.Albedo = Albedo;
-						SphereData.Center = SphereCenter;
-						SphereData.Radius = 0.2f;
-						m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Lambertian);
-					}
-					else if (ChooseMat < 0.95f)
-					{
-						// metal
-						Color Albedo = Color::RandomVector();
-						float Fuzz = Utility::RandomFloat(0.f, 0.5f);
-						MaterialScatterData MatScatterData;
-						MatScatterData.Albedo = Albedo;
-						MatScatterData.FuzzOrRI = Fuzz;
-						SphereData.Center = SphereCenter;
-						SphereData.Radius = 0.2f;
-						m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Metal);
-					}
-					else
-					{
-						// glass
-						MaterialScatterData MatScatterData;
-						MatScatterData.FuzzOrRI = 1.5f;
-						SphereData.Center = SphereCenter;
-						SphereData.Radius = 0.2f;
-						m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Dielectric);
-					}
+					// diffuse
+					Color Albedo = Color::RandomVector() * Color::RandomVector();
+					MaterialScatterData MatScatterData;
+					MatScatterData.Albedo = Albedo;
+					SphereData.Center = SphereCenter;
+					SphereData.Radius = 0.2f;
+					m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Lambertian);
+				}
+				else if (ChooseMat < 0.95f)
+				{
+					// metal
+					Color Albedo = Color::RandomVector();
+					float Fuzz = Utility::RandomFloat(0.f, 0.5f);
+					MaterialScatterData MatScatterData;
+					MatScatterData.Albedo = Albedo;
+					MatScatterData.FuzzOrRI = Fuzz;
+					SphereData.Center = SphereCenter;
+					SphereData.Radius = 0.2f;
+					m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Metal);
+				}
+				else
+				{
+					// glass
+					MaterialScatterData MatScatterData;
+					MatScatterData.FuzzOrRI = 1.5f;
+					SphereData.Center = SphereCenter;
+					SphereData.Radius = 0.2f;
+					m_World->VAddSphere(SphereData, MatScatterData, MaterialType::Dielectric);
 				}
 			}
 		}
-		MaterialScatterData ScatterData;
-		ScatterData.FuzzOrRI = 1.5f;
-		m_World->VAddSphere(SphereObjectData(Point3D(0.f, 1.f, 0.f), 1.f), ScatterData, MaterialType::Dielectric);
-
-		ScatterData.Albedo = Color(0.4f, 0.2f, 0.1f);
-		m_World->VAddSphere(SphereObjectData(Point3D(-4, 1, 0), 1.f), ScatterData, MaterialType::Lambertian);
-
-		ScatterData.Albedo = Color(0.7f, 0.6f, 0.5f);
-		ScatterData.FuzzOrRI = 0.f;
-		m_World->VAddSphere(SphereObjectData(Point3D(4, 1, 0), 1.f), ScatterData, MaterialType::Metal);
 	}
-	else
-	{
-		/*
-		std::shared_ptr<Material> GroundMat = std::make_shared<Lambertian>(Color(0.5f, 0.5f, 0.5f));
-		m_World = std::make_unique<HittableList>(std::make_shared<Sphere>(Point3D(0.f, -1000.f, 0.f), 1000.f, GroundMat));
-		for (int a = -11; a < 11; a++) 
-		{
-			for (int b = -11; b < 11; b++) 
-			{
-				float ChooseMat = Utility::RandomFloat();
-				Point3D SphereCenter(a + 0.9f * Utility::RandomFloat(), 0.2f, b + 0.9f * Utility::RandomFloat());
+	MaterialScatterData ScatterData;
+	ScatterData.FuzzOrRI = 1.5f;
+	m_World->VAddSphere(SphereObjectData(Point3D(0.f, 1.f, 0.f), 1.f), ScatterData, MaterialType::Dielectric);
 
-				if ((SphereCenter - Point3D(4.f, 0.2f, 0.f)).Length() > 0.9f) 
-				{
-					std::shared_ptr<Material> SphereMat;
+	ScatterData.Albedo = Color(0.4f, 0.2f, 0.1f);
+	m_World->VAddSphere(SphereObjectData(Point3D(-4, 1, 0), 1.f), ScatterData, MaterialType::Lambertian);
 
-					if (ChooseMat < 0.8) 
-					{
-						// diffuse
-						Color albedo = Color::RandomVector() * Color::RandomVector();
-						SphereMat = std::make_shared<Lambertian>(albedo);
-						m_World->Add(make_shared<Sphere>(SphereCenter, 0.2, SphereMat));
-					}
-					else if (ChooseMat < 0.95) 
-					{
-						// metal
-						Color albedo = Color::RandomVector();
-						float fuzz = Utility::RandomFloat(0.f, 0.5f);
-						SphereMat = std::make_shared<Metal>(albedo, fuzz);
-						m_World->Add(std::make_shared<Sphere>(SphereCenter, 0.2, SphereMat));
-					}
-					else 
-					{
-						// glass
-						SphereMat = std::make_shared<Dielectric>(1.5);
-						m_World->Add(std::make_shared<Sphere>(SphereCenter, 0.2, SphereMat));
-					}
-				}
-			}
-		}
-
-		std::shared_ptr<Material> Mat1 = std::make_shared<Dielectric>(1.5);
-		m_World->Add(std::make_shared<Sphere>(Point3D(0, 1, 0), 1.0, Mat1));
-
-		std::shared_ptr<Material> Mat2 = std::make_shared<Lambertian>(Color (0.4, 0.2, 0.1));
-		m_World->Add(std::make_shared<Sphere>(Point3D(-4, 1, 0), 1.0, Mat2));
-
-		std::shared_ptr<Material> Mat3 = std::make_shared<Metal>(Color(0.7, 0.6, 0.5), 0.0);
-		m_World->Add(std::make_shared<Sphere>(Point3D(4, 1, 0), 1.0, Mat3));*/
-	}
-	
+	ScatterData.Albedo = Color(0.7f, 0.6f, 0.5f);
+	ScatterData.FuzzOrRI = 0.f;
+	m_World->VAddSphere(SphereObjectData(Point3D(4, 1, 0), 1.f), ScatterData, MaterialType::Metal);
 }
 

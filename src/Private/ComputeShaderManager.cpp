@@ -58,11 +58,11 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 
 	D3D11_BUFFER_DESC SphereTransformBufferDesc;
 	
-	SphereTransformBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	SphereTransformBufferDesc.Usage = D3D11_USAGE_DYNAMIC;//Note that because we did not set initial resource so we need to map. Which means usage should be dynamic
 	SphereTransformBufferDesc.ByteWidth = sizeof(SphereTransformBufferType) * m_ObjectCount;
 	SphereTransformBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	SphereTransformBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	SphereTransformBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	SphereTransformBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;//We have to set this flag to let dx11 know that this is a structured buffer
 	SphereTransformBufferDesc.StructureByteStride = sizeof(SphereTransformBufferType);
 
 	Result = m_Device->CreateBuffer(&SphereTransformBufferDesc, nullptr, &m_SphereTransformBuffer);
@@ -92,7 +92,7 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 	SphereMaterialBufferDesc.ByteWidth = sizeof(SphereMaterialBufferType) * m_ObjectCount;
 	SphereMaterialBufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	SphereMaterialBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	SphereMaterialBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	SphereMaterialBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;//We have to set this flag to let dx11 know that this is a structured buffer
 	SphereMaterialBufferDesc.StructureByteStride = sizeof(SphereMaterialBufferType);
 
 	Result = m_Device->CreateBuffer(&SphereMaterialBufferDesc, nullptr, &m_SphereMaterialBuffer);
@@ -189,27 +189,6 @@ bool ComputeShaderManager::SetShaderParams(const XMFLOAT3& CameraPos, const XMFL
 
 	m_DeviceContext->CSSetConstantBuffers(0, 1, &m_CSConstantBuffer);
 
-	//Buffer for anti-alias offsets. We use the same 100(or more) random offsets for all the pixels
-	/*
-	SampleOffsetBufferType* SampleOffsetBufferData = nullptr;
-
-	Result = m_DeviceContext->Map(m_SampleOffsetBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-	if (FAILED(Result))
-	{
-		wchar_t ErrorMessage[128];
-		wsprintf(ErrorMessage, L"Failed to map sample offset constant buffer! Error code: %04X", Result);
-		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
-		return false;
-	}
-
-	SampleOffsetBufferData = static_cast<SampleOffsetBufferType*>(MappedResource.pData);
-
-	memcpy(SampleOffsetBufferData->SampleOffsets, SampleOffset, sizeof(XMFLOAT2) * 100);
-
-	m_DeviceContext->Unmap(m_SampleOffsetBuffer, 0);
-
-	m_DeviceContext->CSSetConstantBuffers(1, 1, &m_SampleOffsetBuffer);*/
-
 	//Structured Buffers
 	SphereTransformBufferType* SphereTransformBufferData = nullptr;
 
@@ -266,10 +245,22 @@ void ComputeShaderManager::DispatchShader()
 
 ComputeShaderManager::~ComputeShaderManager()
 {
-	//We never called AddRef() here so we do not call Release here
-	m_CSConstantBuffer = nullptr;
-	m_SphereTransformBuffer = nullptr;
-	
+	if (m_ComputeShader)
+	{
+		m_ComputeShader->Release();
+		m_ComputeShader = nullptr;
+	}
+	if (m_SphereTransformBuffer)
+	{
+		m_SphereTransformBuffer->Release();
+		m_SphereTransformBuffer = nullptr;
+	}
+	if(m_CSConstantBuffer)
+	{
+		m_CSConstantBuffer->Release();
+		m_CSConstantBuffer = nullptr;
+	}
+
 	if (m_SphereMaterialBuffer)
 	{
 		m_SphereMaterialBuffer->Release();
