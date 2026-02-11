@@ -33,6 +33,9 @@ However, this project does differ from the original implementations in multiple 
   - Added multithreaded rendering using a thread pool. (Thread pool implementation is based on https://github.com/progschj/ThreadPool/blob/master/ThreadPool.h. Credits to the author)
   - Reduced render time by up to **80%** compared to the single-threaded implementation in the book.
   - Used data-oriented design to store scene object data in cache-coherent structs and arrays. Reduced render time by up to **50%**.
+
+- **GPU Rendering**
+- Added hardware rendering using DX11 and compute shader.
 ---
 
 ## Technical Focus
@@ -50,6 +53,6 @@ However, this project does differ from the original implementations in multiple 
 This project is still ongoing and primarily intended as a learning and experimentation platform.
 
 Planned future work includes:
-- Further refactoring and cleanup of rendering architecture
-- Experimenting with hardware rendering paths using DX11
-- Potentially moving to modern APIs such as Vulkan and DX12
+- Further refactoring and cleanup of rendering architecture.
+- Using CMake so the project build process can decouple from Visual Studio.
+- Potentially moving to modern APIs such as Vulkan and DX12.
