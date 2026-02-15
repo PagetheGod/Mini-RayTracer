@@ -25,8 +25,8 @@ bool HardwareRenderer::Intialize(HWND hWnd)
 
 	//Remember that our camera center is also the center of our coordinate system
 	m_Camera = Camera();
-	m_Camera.SetSampleCount(100);
-	m_Camera.SetMaxDepth(25);
+	m_Camera.SetSampleCount(15);
+	m_Camera.SetMaxDepth(20);
 	m_Device = m_D3D11->GetDevice();
 	m_DeviceContext = m_D3D11->GetDeviceContext();
 

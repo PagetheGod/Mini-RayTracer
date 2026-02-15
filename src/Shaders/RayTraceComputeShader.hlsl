@@ -1,3 +1,4 @@
+//Technically we can just move the uint data upwards but I counted and it seems it doesn't save any space
 cbuffer GlobalBuffer
 {
     float3 CameraPos;
@@ -83,6 +84,8 @@ uint PCGHash(uint Seed)
 }
 
 
+//According to claude, FNV1a is not good in this context as it can produce lots of noises(stripes and patterns due to low quality)
+//But I tried it out using like <= 5 samples and it looks pretty much the same as PCG
 uint FNV1AHash(uint Seed)
 {
     const uint FNVPrime = 16777619u;
@@ -304,6 +307,7 @@ float4 PerformPathTrace(const Ray R, inout RandomState RandState)
 
 
 
+//Probably far from an efficient shader due to lots of branchings
 [numthreads(8, 8, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {

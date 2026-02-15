@@ -11,9 +11,6 @@
 #include <atomic>
 #include <strsafe.h>
 
-
-#define MULTITHREADED 1
-
 class D2D1Class;
 
 class SoftwareRenderer

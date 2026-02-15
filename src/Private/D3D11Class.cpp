@@ -107,6 +107,7 @@ bool D3D11Class::InitializeD3D11()
 	SwapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	SwapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	SwapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	if (m_IsVsyncEnabled)
 	{
 		SwapChainDesc.BufferDesc.RefreshRate.Numerator = RefreshRateNum;

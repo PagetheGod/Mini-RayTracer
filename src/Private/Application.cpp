@@ -10,6 +10,19 @@ Application::Application(const RenderType RendererType) : m_WindowHandle(NULL), 
 
 bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, int Height)
 {
+	DialogBox(InhInstance, L"Settings.rc", NULL, &Application::SettingsDialogProc);
+	long long Result = DialogBoxParamA(InhInstance, "Settings.rc", NULL, &Application::SettingsDialogProc, (LPARAM)this);
+	if (Result == 0 || Result == -1)
+	{
+		unsigned long int ErrorCode = GetLastError();
+		wchar_t ErrorMessage[128];
+		wsprintf(ErrorMessage, L"Failed to create settings dialog box! Error code: %lu", ErrorCode);
+		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		return false;
+		return false;
+	}
+
+
 	const wchar_t WindowClassName[] = L"Ray Tracer Window Class";
 
 	WNDCLASS WindowClass{};
@@ -200,6 +213,44 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 	}
 
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
+}
+
+//Callback function handling the startup dialog box which allows user to set the ray tracer's settings
+long long Application::SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	//Same deal, it's a C API and essentially a static function, so we have to get the pointer to the application instance from the window data
+	Application* AppPtr = nullptr;
+
+	if (uMsg == WM_INITDIALOG)
+	{
+		AppPtr = reinterpret_cast<Application*>(lParam);
+
+	}
+	SetLastError(0);
+	long long Result = SetWindowLongPtr(hDlg, DWLP_USER, (long long)AppPtr);
+	if (!Result && GetLastError() != 0)
+	{
+		unsigned long int ErrorCode = GetLastError();
+		wchar_t ErrorMessage[128];
+		wsprintf(ErrorMessage, L"Failed to set settings dialog box instance app pointer! Error code: %lu", ErrorCode);
+		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		return -1;
+	}
+	else
+	{
+		AppPtr = reinterpret_cast<Application*>(GetWindowLongPtr(hDlg, DWLP_USER));
+	}
+
+	if (AppPtr)
+	{
+		return AppPtr->HandleSettingsDialogMessage(hDlg, uMsg, wParam, lParam);
+	}
+	return DefDlgProc(hDlg, uMsg, wParam, lParam);
+}
+
+long long Application::HandleSettingsDialogMessage(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	return 0;
 }
 
 void Application::Shutdown()

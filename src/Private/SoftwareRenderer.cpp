@@ -145,46 +145,42 @@ void SoftwareRenderer::RenderFrameBuffer()
 	RenderTimer.Start();
 	for (int i = 0; i < m_Height; i++)
 	{
-		if (MULTITHREADED)
+		Futures.push_back(m_ThreadPool->SubmitTask([this, CameraCenter, FirstPixelPos, i]()
 		{
-			Futures.push_back(m_ThreadPool->SubmitTask([this, CameraCenter, FirstPixelPos, i]()
+			for (int j = 0; j < m_Width; j++)
 			{
-				for (int j = 0; j < m_Width; j++)
-				{
-					Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
+				Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
 
-					Color PixelColor = Color(0.f, 0.f, 0.f);
-					PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
-					//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
-					size_t PixelIndex = (i * m_Width + j) * 4;
+				Color PixelColor = Color(0.f, 0.f, 0.f);
+				PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
+				//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
+				size_t PixelIndex = (i * m_Width + j) * 4;
 					
-					//Apply gamma correction to color components and adjust them to between 0 and 255
-					unsigned char AdjustedRed = (unsigned char)LinearToGamma(PixelColor.R());
-					unsigned char AdjustedGreen = (unsigned char)LinearToGamma(PixelColor.G());
-					unsigned char AdjustedBlue = (unsigned char)LinearToGamma(PixelColor.B());
+				//Apply gamma correction to color components and adjust them to between 0 and 255
+				unsigned char AdjustedRed = (unsigned char)LinearToGamma(PixelColor.R());
+				unsigned char AdjustedGreen = (unsigned char)LinearToGamma(PixelColor.G());
+				unsigned char AdjustedBlue = (unsigned char)LinearToGamma(PixelColor.B());
 
-					AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
-					AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
-					AdjustedBlue =  (unsigned char)(255.999f * PixelColor.B());
+				AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
+				AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
+				AdjustedBlue =  (unsigned char)(255.999f * PixelColor.B());
 
-					m_FrameBuffer[PixelIndex] = AdjustedBlue;
-					m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
-					m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
-				}
-				return i;
-			}));
-		}
+				m_FrameBuffer[PixelIndex] = AdjustedBlue;
+				m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;
+				m_FrameBuffer[PixelIndex + 2] = AdjustedRed;
+			}
+			return i;
+		}));
 	}
-	if (MULTITHREADED)
+
+	for (auto& Future : Futures)
 	{
-		for (auto& Future : Futures)
-		{
-			int Scanline = Future.get();
-			RECT UpdateRegion{ 0, Scanline, m_Width, Scanline + 1};
-			InvalidateRect(m_hWnd, &UpdateRegion, false);
-			UpdateWindow(m_hWnd);
-		}
+		int Scanline = Future.get();
+		RECT UpdateRegion{ 0, Scanline, m_Width, Scanline + 1};
+		InvalidateRect(m_hWnd, &UpdateRegion, false);
+		UpdateWindow(m_hWnd);
 	}
+
 	RenderTimer.Stop();
 	RenderTime = (double)RenderTimer.GetLastDuration() / 1000.0;
 	std::vector<char> CompleteMessage(128);

@@ -5,6 +5,7 @@
 * With changes such as:
 * 1. Renders to a GUI window using the WIN32 API and D2D1(for software rendering), DX11(for potential hardware rendering)
 * 2. Implemented multi-threaded rendering using a basic thread pool
+* 3. Added hardware rendering using DX11 and compute shader
 */
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) 
 {
