@@ -101,9 +101,9 @@ void SoftwareRenderer::RenderPPM()
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
 
 	m_OutFileStream << "P3\n" << m_Width << ' ' << m_Height << "\n255\n";
-	for (int i = 0; i < m_Height; i++)
+	for (size_t i = 0; i < m_Height; i++)
 	{
-		for (int j = 0; j < m_Width; j++)
+		for (size_t j = 0; j < m_Width; j++)
 		{
 			Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
 			Vector3D RayDirection = PixelPos - CameraCenter;
@@ -140,14 +140,14 @@ void SoftwareRenderer::RenderFrameBuffer()
 	
 
 	CreateWorld();
-	std::vector<std::future<int>> Futures;
+	std::vector<std::future<unsigned int>> Futures;
 	Futures.reserve(1080);
 	RenderTimer.Start();
-	for (int i = 0; i < m_Height; i++)
+	for (unsigned int i = 0; i < m_Height; i++)
 	{
 		Futures.push_back(m_ThreadPool->SubmitTask([this, CameraCenter, FirstPixelPos, i]()
 		{
-			for (int j = 0; j < m_Width; j++)
+			for (unsigned int j = 0; j < m_Width; j++)
 			{
 				Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
 
