@@ -13,6 +13,7 @@
 #define IDC_COMBO_RESOLUTION3           1008
 #define IDC_COMBO_DEPTH                 1008
 #define IDC_STATIC_SAMPLE_COUNT2        1009
+#define IDC_STATIC_TRACE_DEPTH          1009
 
 // Next default values for new objects
 // 

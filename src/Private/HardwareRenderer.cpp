@@ -2,7 +2,7 @@
 #include "../Public/ComputeShaderManager.h"
 #include "../Public/Timer.h"
 
-HardwareRenderer::HardwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_World(nullptr), 
+HardwareRenderer::HardwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_World(nullptr),
 m_ComputeShaderManager(nullptr), m_Device(nullptr), m_DeviceContext(nullptr), m_CSTransformBuffer(nullptr), m_CSMaterialBuffer(nullptr)
 {
 
@@ -10,7 +10,7 @@ m_ComputeShaderManager(nullptr), m_Device(nullptr), m_DeviceContext(nullptr), m_
 
 
 
-bool HardwareRenderer::Intialize(HWND hWnd)
+bool HardwareRenderer::Intialize(HWND hWnd, unsigned int SampleCount, unsigned int MaxDepth)
 {
 	m_hWnd = hWnd;
 
@@ -25,8 +25,8 @@ bool HardwareRenderer::Intialize(HWND hWnd)
 
 	//Remember that our camera center is also the center of our coordinate system
 	m_Camera = Camera();
-	m_Camera.SetSampleCount(15);
-	m_Camera.SetMaxDepth(20);
+	m_Camera.SetSampleCount(SampleCount);
+	m_Camera.SetMaxDepth(MaxDepth);
 	m_Device = m_D3D11->GetDevice();
 	m_DeviceContext = m_D3D11->GetDeviceContext();
 

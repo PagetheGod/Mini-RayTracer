@@ -2,25 +2,30 @@
 #include <string.h>
 #include "../Public/SoftwareRenderer.h"
 #include "../Public/HardwareRenderer.h"
+#include "../../resource.h"
+#include <intrin.h>
 
-Application::Application(const RenderType RendererType) : m_WindowHandle(NULL), m_WindowClass(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr), m_RendererType(RendererType)
+
+Application::Application() : m_WindowHandle(NULL), m_WindowClass(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr)
 {
+	memset(m_CPUName, 0, sizeof(m_CPUName));
+	memset(m_GPUName, 0, sizeof(m_GPUName));
+	
+	//Initialize the vectors so we can easily retreive the values using the indices we get back from the combo boxes
+	m_Resolutions = { {640, 480}, {800, 600}, {1024, 768}, {1280, 720}, {1920, 1080}, {2560, 1440} };
+	m_SampleCounts = { 3, 5, 10, 15, 20, 50, 75, 100, 150, 200, 500 };
+	m_MaxDepths = { 5, 10, 15, 25, 50 };
 
 }
 
-bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, int Height)
+bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow)
 {
-	DialogBox(InhInstance, L"Settings.rc", NULL, &Application::SettingsDialogProc);
-	long long Result = DialogBoxParamA(InhInstance, "Settings.rc", NULL, &Application::SettingsDialogProc, (LPARAM)this);
-	if (Result == 0 || Result == -1)
+	long long Result = DialogBoxParamA(InhInstance, MAKEINTRESOURCEA(IDD_DIALOG2), NULL, &Application::SettingsDialogProc, (LPARAM)this);
+	if (Result == FALSE)
 	{
-		unsigned long int ErrorCode = GetLastError();
-		wchar_t ErrorMessage[128];
-		wsprintf(ErrorMessage, L"Failed to create settings dialog box! Error code: %lu", ErrorCode);
-		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
+		//The user chose to quit in the dialog box, exit the application
 		return false;
-		return false;
-	}
+	}	
 
 
 	const wchar_t WindowClassName[] = L"Ray Tracer Window Class";
@@ -42,16 +47,16 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 
 
 	float AspectRatio = 16.f / 9.f;
-	Height = (int)(Width / AspectRatio);
-    Height >= 1 ? Height : Height = 1;
+	m_Height = (unsigned int)(m_Width / AspectRatio);
+	m_Height >= 1 ? m_Height : m_Height = 1;
 
 
 	//Center the window. Note that we are working with 0 based coordinates that start at the top left of the screen, not NDC
-	int PosX = (GetSystemMetrics(SM_CXSCREEN) - Width) / 2;
-	int PosY = (GetSystemMetrics(SM_CYSCREEN) - Height) / 2;
+	int PosX = (GetSystemMetrics(SM_CXSCREEN) - m_Width) / 2;
+	int PosY = (GetSystemMetrics(SM_CYSCREEN) - m_Height) / 2;
 
 	//Adjust the actual window client size to our assumed pixel counts - we do this because the actual client size is assumed size - paddings + borders and stuffs
-	RECT RC = RECT(0, 0, Width, Height);
+	RECT RC = RECT(0, 0, m_Width, m_Height);
 	AdjustWindowRectEx(&RC, WS_OVERLAPPEDWINDOW, false, 0);
 
 	int ActualWidth = RC.right - RC.left;
@@ -84,8 +89,8 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 	//For software rendering, especially for a ppm output, we only need to pass the width
 	if (m_RendererType == RenderType::Software)
 	{
-		m_SoftwareRenderer = std::make_unique<SoftwareRenderer>(Width, Height, AspectRatio);
-		bool Result = m_SoftwareRenderer->Initialize("output.ppm", m_WindowHandle);
+		m_SoftwareRenderer = std::make_unique<SoftwareRenderer>(m_Width, m_Height, AspectRatio);
+		bool Result = m_SoftwareRenderer->Initialize("output.ppm", m_WindowHandle, m_SampleCount, m_MaxDepth);
 		if (!Result)
 		{
 			return false;
@@ -93,8 +98,8 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 	}
 	else
 	{
-		m_HardwareRenderer = std::make_unique<HardwareRenderer>(Width, Height, AspectRatio);
-		bool Result = m_HardwareRenderer->Intialize(m_WindowHandle);
+		m_HardwareRenderer = std::make_unique<HardwareRenderer>(m_Width, m_Height, AspectRatio);
+		bool Result = m_HardwareRenderer->Intialize(m_WindowHandle, m_SampleCount, m_MaxDepth);
 		if (!Result)
 		{
 			return false;
@@ -110,6 +115,7 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width, i
 void Application::Run()
 {
 	MSG Msg{};
+
 	while (GetMessage(&Msg, m_WindowHandle, 0, 0) > 0)
 	{
 		TranslateMessage(&Msg);
@@ -234,7 +240,7 @@ long long Application::SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 		wchar_t ErrorMessage[128];
 		wsprintf(ErrorMessage, L"Failed to set settings dialog box instance app pointer! Error code: %lu", ErrorCode);
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
-		return -1;
+		return FALSE;
 	}
 	else
 	{
@@ -250,7 +256,178 @@ long long Application::SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 
 long long Application::HandleSettingsDialogMessage(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	switch (uMsg)
+	{
+		case WM_INITDIALOG:
+		{
+			HWND ComboListHandle;
+			//The dialog box is created, initialize the drop down list contents
+			ComboListHandle = GetDlgItem(hDlg, IDC_COMBO_RESOLUTION);
+			wchar_t ListContents[256];
+			memset(ListContents, 0, sizeof(ListContents));
+			for (const auto& [Width, Height] : m_Resolutions)
+			{
+				if (Width >= 1920)
+				{
+					StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%dx%d (incompatible with laptops)", Width, Height);
+				}
+				else
+				{
+					StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%dx%d", Width, Height);
+				}
+				SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
+			}
+			SendMessageW(ComboListHandle, CB_SETCURSEL, 3, 0); //Set default selection to 1920x1080
+			//Initialize render type combo list
+			ComboListHandle = GetDlgItem(hDlg, IDC_RENDER_TYPE);
+			memset(ListContents, 0, sizeof(ListContents));
+
+			StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"Software (%s)", m_CPUName);
+			SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
+
+			memset(ListContents, 0, sizeof(ListContents));
+			StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"Hardware (%s)", m_GPUName);
+			SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)L"Hardware");
+
+			SendMessageW(ComboListHandle, CB_SETCURSEL, 1, 0); //Set default selection to hardware rendering
+			//Initialize sample count combo list
+			ComboListHandle = GetDlgItem(hDlg, IDC_COMBO_SAMPLE);
+			memset(ListContents, 0, sizeof(ListContents));
+			for (const unsigned int SampleCount : m_SampleCounts)
+			{
+				if (SampleCount >= 150)
+				{
+					StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%u (increases render time)", SampleCount);
+				}
+				else
+				{
+					StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%u", SampleCount);
+				}
+				SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
+			}
+			SendMessageW(ComboListHandle, CB_SETCURSEL, 7, 0); //Set default selection to 100 samples per pixel
+			//Initialize max depth combo list
+			ComboListHandle = GetDlgItem(hDlg, IDC_COMBO_DEPTH);
+			memset(ListContents, 0, sizeof(ListContents));
+			for (const unsigned int MaxDepth : m_MaxDepths)
+			{
+				if (MaxDepth >= 25)
+				{
+					StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%u (increases render time)", MaxDepth);
+				}
+				else
+				{
+					StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%u", MaxDepth);
+				}
+				SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
+			}
+			SendMessageW(ComboListHandle, CB_SETCURSEL, 2, 0);//Set default selection to 15 max depth	
+			return TRUE;
+		}
+		case WM_COMMAND:
+		{
+			switch (LOWORD(wParam))
+			{
+				case IDOK:
+				{
+					//User cliked ok, retreive the settings and store them in the application instance
+					size_t ResolutionIndex = SendMessageW(GetDlgItem(hDlg, IDC_COMBO_RESOLUTION), CB_GETCURSEL, 0, 0);
+					size_t RenderTypeIndex = SendMessageW(GetDlgItem(hDlg, IDC_RENDER_TYPE), CB_GETCURSEL, 0, 0);
+					size_t SampleCountIndex = SendMessageW(GetDlgItem(hDlg, IDC_COMBO_SAMPLE), CB_GETCURSEL, 0, 0);
+					size_t MaxDepthIndex = SendMessageW(GetDlgItem(hDlg, IDC_COMBO_DEPTH), CB_GETCURSEL, 0, 0);
+					
+					m_Width = m_Resolutions[ResolutionIndex].first;
+					m_Height = m_Resolutions[ResolutionIndex].second;
+					m_RendererType = RenderType(RenderTypeIndex);
+					m_SampleCount = m_SampleCounts[SampleCountIndex];
+					m_MaxDepth = m_MaxDepths[MaxDepthIndex];
+
+
+					EndDialog(hDlg, 0);
+
+					return TRUE;
+				}
+				case IDCANCEL:
+				{
+					if (MessageBox(hDlg, L"Are you sure you want to quit?", L"Mini Ray Tracer", MB_OKCANCEL) == IDOK)
+					{
+						EndDialog(hDlg, 0);
+						return FALSE;
+					}
+					return TRUE;
+				}
+			}
+		}
+	}
 	return 0;
+}
+
+void Application::GetCPUName()
+{
+	//According to the docs, calling __cpuid with 0x80000000 as the function_id argument gets the number of highest extend ID
+	int CPUIDInfo[4] = { -1 };
+	__cpuid(CPUIDInfo, 0x80000000);
+	int NumExtendedIDs = CPUIDInfo[0];
+	std::vector<int[4]> ExtendedCPUIDInfo;
+	for (int i = 0x80000000; i <= NumExtendedIDs; i++)
+	{
+		__cpuidex(CPUIDInfo, i, 0);
+		ExtendedCPUIDInfo.push_back(CPUIDInfo);
+	}
+	char CPUBrandString[64];
+	memset(CPUBrandString, 0, sizeof(CPUBrandString));
+	//If numexid is avaliable upto 0x80000004
+	if (NumExtendedIDs >= 0x80000004)
+	{
+		memcpy(CPUBrandString, &ExtendedCPUIDInfo[2][0], sizeof(CPUIDInfo));
+		memcpy(CPUBrandString + 16, &ExtendedCPUIDInfo[3][0], sizeof(CPUIDInfo));
+		memcpy(CPUBrandString + 32, &ExtendedCPUIDInfo[4][0], 16);
+	}
+	else
+	{
+		strcpy_s(CPUBrandString, "Unknown CPU");
+	}
+	//Store the CPU name in the m_CPUName member variable, which is used for display in the settings dialog box
+	std::mbstowcs(m_CPUName, CPUBrandString, sizeof(CPUBrandString));
+}
+
+void Application::GetGPUName()
+{
+	HRESULT Result;
+
+	IDXGIFactory1* DXGIFactory = nullptr;
+	IDXGIAdapter* DXGIAdapter = nullptr;
+
+	Result = CreateDXGIFactory1(__uuidof(IDXGIFactory), (void**)(&DXGIFactory));
+	if (FAILED(Result))
+	{
+		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%s", "Unknown GPU");
+		return;
+	}
+
+	Result = DXGIFactory->EnumAdapters(0, &DXGIAdapter);
+	if (FAILED(Result))
+	{
+		DXGIFactory->Release();
+		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%s", "Unknown GPU");
+		return;
+	}
+
+	DXGI_ADAPTER_DESC AdapterDesc;
+	Result = DXGIAdapter->GetDesc(&AdapterDesc);
+	if (FAILED(Result))
+	{
+		DXGIFactory->Release();
+		DXGIAdapter->Release();
+		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%s", "Unknown GPU");
+		return;
+	}
+
+	//Get the actual GPU name and memory. They are wide chars which means we have to have a wchar_t array
+	unsigned long long VideoMemGB = AdapterDesc.DedicatedVideoMemory / (1024 * 1024 * 1024);
+	StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%s - %zu GB", AdapterDesc.Description, VideoMemGB);
+	DXGIFactory->Release();
+	DXGIAdapter->Release();
 }
 
 void Application::Shutdown()

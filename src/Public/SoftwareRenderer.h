@@ -16,8 +16,8 @@ class D2D1Class;
 class SoftwareRenderer
 {
 public:
-	SoftwareRenderer(int Width, int Height, float AspectRatio);
-	bool Initialize(const char* OutFileName, HWND hWnd);
+	SoftwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio);
+	bool Initialize(const char* OutFileName, HWND hWnd, unsigned int SampleCount, unsigned int MaxDepth);
 	void ClearWindow();
 	void RenderPPM();
 	void RenderFrameBuffer();
@@ -29,8 +29,8 @@ public:
 private:
 	void CreateWorld();
 private:
-	int m_Width;
-	int m_Height;
+	unsigned int m_Width;
+	unsigned int m_Height;
 	float m_AspectRatio;
 	float m_ViewportWidth;
 	float m_ViewportHeight;

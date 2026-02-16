@@ -5,7 +5,7 @@
 #include "../Public/SubMaterials.h"
 
 
-SoftwareRenderer::SoftwareRenderer(int Width, int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()), 
+SoftwareRenderer::SoftwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()),
 m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
 {
 
@@ -13,7 +13,7 @@ m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
 
 //Some of the viewport, fov, and aspect ratio logics can be moved into the camera class
 //But for this project such set up is fine. Or maybe we should move these logic into the constructor for RAII
-bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
+bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd, unsigned int SampleCount, unsigned int MaxDepth)
 {
 	bool Result = false;
 
@@ -28,8 +28,8 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd)
 
 	//Remember that our camera center is also the center of our coordinate system
 	m_Camera = Camera();
-	m_Camera.SetSampleCount(100);
-	m_Camera.SetMaxDepth(20);
+	m_Camera.SetSampleCount(SampleCount);
+	m_Camera.SetMaxDepth(MaxDepth);
 
 	float VFovAngle = Utility::DegreeToRadian(m_Camera.VerticalFOV);
 	float h = std::tan(VFovAngle / 2.f);

@@ -15,9 +15,9 @@ class ComputeShaderManager;
 class HardwareRenderer
 {
 public:
-	HardwareRenderer(int Width, int Height, float AspectRatio);
+	HardwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio);
 	~HardwareRenderer();
-	bool Intialize(HWND hWnd);
+	bool Intialize(HWND hWnd, unsigned int SampleCount, unsigned int MaxDepth);
 	void GetShaderBuffers();
 	bool RenderScene();
 	void FillBackBuffer();
@@ -27,8 +27,8 @@ private:
 	void CreateWorld();
 
 private:
-	int m_Width;
-	int m_Height;
+	unsigned int m_Width;
+	unsigned int m_Height;
 	float m_AspectRatio;
 	float m_ViewportWidth;
 	float m_ViewportHeight;

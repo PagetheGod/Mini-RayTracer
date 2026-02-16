@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include <cstdint>
 #include <memory>
+#include <utility>
+#include <vector>
 
 enum RenderType : uint8_t
 {
@@ -17,8 +19,8 @@ class HardwareRenderer;
 class Application
 {
 public:
-	Application(const RenderType RendererType = RenderType::Software);
-	bool Initialize(HINSTANCE InhInstance, int InpCmdShow, int Width = 1920, int Height = 1080);
+	Application();
+	bool Initialize(HINSTANCE InhInstance, int InpCmdShow);
 	void Run();
 	//This function has to be static otherwise it won't match the CreateWindowEx signature
 	//It has to do with probably the fact that non-static member functions have an implicit "this" parameter, which did not exist in C(remember that Win32 is C)
@@ -27,6 +29,9 @@ public:
 	//Function used by the dialog box, it's logically similar to the normal window procedure
 	static long long CALLBACK SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	long long HandleSettingsDialogMessage(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	//Helpers to get CPU and GPU names. Mostly aethetics
+	void GetCPUName();
+	void GetGPUName();
 	void Shutdown();
 	~Application();
 
@@ -42,4 +47,16 @@ private:
 	std::unique_ptr<HardwareRenderer> m_HardwareRenderer;
 	bool m_IsFirstPaint = true;
 	RenderType m_RendererType;
+	unsigned int m_Width = 0;
+	unsigned int m_Height = 0;
+	unsigned int m_SampleCount = 0;
+	unsigned int m_MaxDepth = 0;
+	//Dialog box stuffs
+	wchar_t m_CPUName[128];
+	wchar_t m_GPUName[128];
+	//These can break apart if we decide to add more resolutions, but for this project it would never happen
+	std::vector<std::pair<int, int>> m_Resolutions;
+	std::vector<unsigned int> m_SampleCounts;
+	std::vector<unsigned int> m_MaxDepths;
+	
 };

@@ -12,7 +12,7 @@ using namespace DirectX;
 class D3D11Class
 {
 public:
-	D3D11Class(HWND Hwnd, int Width = 1920, int Height = 1080);
+	D3D11Class(HWND Hwnd, unsigned int Width = 1920, unsigned int Height = 1080);
 	~D3D11Class();
 	bool InitializeD3D11();
 	void ClearBackground();
