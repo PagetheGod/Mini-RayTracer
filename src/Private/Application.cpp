@@ -3,8 +3,18 @@
 #include "../Public/HardwareRenderer.h"
 #include "../../resource.h"
 #include <string.h>
-#include <intrin.h>
 #include <array>
+
+
+#ifdef _MSC_VER
+//MSVC instrinsics
+#include <intrin.h>
+#else
+//GCC or Clang
+#include <cpuid.h>
+#endif
+
+
 
 
 Application::Application() : m_WindowHandle(NULL), m_WindowClass(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr)
@@ -91,7 +101,7 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow)
 	if (m_RendererType == RenderType::Software)
 	{
 		m_SoftwareRenderer = std::make_unique<SoftwareRenderer>(m_Width, m_Height, AspectRatio);
-		bool Result = m_SoftwareRenderer->Initialize("output.ppm", m_WindowHandle, m_SampleCount, m_MaxDepth);
+		bool Result = m_SoftwareRenderer->Initialize(m_WindowHandle, m_SampleCount, m_MaxDepth);
 		if (!Result)
 		{
 			return false;
@@ -362,12 +372,34 @@ void Application::GetCPUName()
 {
 	//According to the docs, calling __cpuid with 0x80000000 as the function_id argument gets the number of highest extend ID
 	std::array<int, 4> CPUIDInfo;
+#ifdef _MSC_VER
+	//MSVC
+	
 	__cpuid(CPUIDInfo.data(), 0x80000000);
+#else
+	//GCC or Clang
+	unsigned int EAX, EBX, ECX, EDX;
+	int Result = __get_cpuid(0x80000000, &EAX, &EBX, &ECX, &EDX);
+	if (!Result)
+	{
+		//GCC and Clang return 0 if the CPU does not support the leaf
+		wcscpy(m_CPUName, L"Unknown CPU");
+		return;
+	}
+#endif
 	int NumExtendedIDs = CPUIDInfo[0];
 	std::vector<std::array<int, 4>> ExtendedCPUIDInfo;
 	for (int i = 0x80000000; i <= NumExtendedIDs; i++)
 	{
+	#ifdef _MSC_VER
 		__cpuidex(CPUIDInfo.data(), i, 0);
+	#else
+		__get_cpuid_count(i, 0, &EAX, &EBX, &ECX, &EDX);
+		CPUIDInfo[0] = static_cast<int>(EAX);
+		CPUIDInfo[1] = static_cast<int>(EBX);
+		CPUIDInfo[2] = static_cast<int>(ECX);
+		CPUIDInfo[3] = static_cast<int>(EDX);
+	#endif
 		ExtendedCPUIDInfo.push_back(CPUIDInfo);
 	}
 	char CPUBrandString[64];
@@ -381,7 +413,11 @@ void Application::GetCPUName()
 	}
 	else
 	{
+	#ifdef _MSC_VER
 		strcpy_s(CPUBrandString, "Unknown CPU");
+	#else
+		strncpy(CPUBrandString, "Unknown CPU", strlen("Unknown CPU") + 1);
+	#endif
 	}
 	//Store the CPU name in the m_CPUName member variable, which is used for display in the settings dialog box
 	//Do remember to trim the extra white spaces that come with the CPU brand string, otherwise the display will look weird
@@ -393,7 +429,11 @@ void Application::GetCPUName()
 	}
 
 	size_t ConvertedChars = 0;
+#ifdef _MSC_VER
 	mbstowcs_s(&ConvertedChars, m_CPUName, CPUBrandString, i + 1);
+#else
+	mbstowcs(m_CPUName, CPUBrandString, i + 1);
+#endif
 }
 
 void Application::GetGPUName()
@@ -406,7 +446,7 @@ void Application::GetGPUName()
 	Result = CreateDXGIFactory1(__uuidof(IDXGIFactory), (void**)(&DXGIFactory));
 	if (FAILED(Result))
 	{
-		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%zs", L"Unknown GPU");
+		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%ls", L"Unknown GPU");
 		return;
 	}
 
@@ -414,7 +454,7 @@ void Application::GetGPUName()
 	if (FAILED(Result))
 	{
 		DXGIFactory->Release();
-		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%zs", L"Unknown GPU");
+		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%ls", L"Unknown GPU");
 		return;
 	}
 
@@ -424,27 +464,22 @@ void Application::GetGPUName()
 	{
 		DXGIFactory->Release();
 		DXGIAdapter->Release();
-		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%zs", L"Unknown GPU");
+		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%ls", L"Unknown GPU");
 		return;
 	}
 
 	//Get the actual GPU name and memory. They are wide chars which means we have to have a wchar_t array
 	unsigned long long VideoMemGB = AdapterDesc.DedicatedVideoMemory / (1024 * 1024 * 1024);
-	StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%s - %zu GB", AdapterDesc.Description, VideoMemGB);
+#ifdef _MSC_VER
+	StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%s - %llu GB", AdapterDesc.Description, VideoMemGB);
+
+#endif
 	DXGIFactory->Release();
 	DXGIAdapter->Release();
 }
 
-void Application::Shutdown()
-{
-	m_WindowHandle = NULL;
-	if (m_SoftwareRenderer)
-	{
-		m_SoftwareRenderer->Shutdown();
-	}
-	
-}
 
 Application::~Application()
 {
+	m_WindowHandle = NULL;
 }

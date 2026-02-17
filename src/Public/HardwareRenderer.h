@@ -30,8 +30,8 @@ private:
 	unsigned int m_Width;
 	unsigned int m_Height;
 	float m_AspectRatio;
-	float m_ViewportWidth;
-	float m_ViewportHeight;
+	float m_ViewportWidth = 0.f;
+	float m_ViewportHeight = 0.f;
 	Vector3D m_ViewportU;
 	Vector3D m_ViewportV;
 	Vector3D m_DeltaU;

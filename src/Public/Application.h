@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <format>
 
 enum RenderType : uint8_t
 {
@@ -32,7 +33,6 @@ public:
 	//Helpers to get CPU and GPU names. Mostly aethetics
 	void GetCPUName();
 	void GetGPUName();
-	void Shutdown();
 	~Application();
 
 

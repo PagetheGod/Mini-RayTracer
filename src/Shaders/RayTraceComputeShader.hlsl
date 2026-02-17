@@ -85,7 +85,7 @@ uint PCGHash(uint Seed)
 
 
 //According to claude, FNV1a is not good in this context as it can produce lots of noises(stripes and patterns due to low quality)
-//But I tried it out using like <= 5 samples and it looks pretty much the same as PCG
+//But I tried it out using like <= 5 samples(and higher samples) and it looks pretty much the same as PCG
 uint FNV1AHash(uint Seed)
 {
     const uint FNVPrime = 16777619u;

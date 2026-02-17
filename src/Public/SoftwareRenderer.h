@@ -2,7 +2,6 @@
 
 
 #include <string>
-#include <fstream>
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "Sphere.h"
@@ -17,14 +16,12 @@ class SoftwareRenderer
 {
 public:
 	SoftwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio);
-	bool Initialize(const char* OutFileName, HWND hWnd, unsigned int SampleCount, unsigned int MaxDepth);
+	bool Initialize(HWND hWnd, unsigned int SampleCount, unsigned int MaxDepth);
 	void ClearWindow();
-	void RenderPPM();
 	void RenderFrameBuffer();
 	void RenderToWindow();
-	void Shutdown();
 
-	~SoftwareRenderer() = default;
+	~SoftwareRenderer();
 
 private:
 	void CreateWorld();
@@ -40,7 +37,6 @@ private:
 	Vector3D m_DeltaV;
 	Camera m_Camera;
 	std::unique_ptr<HittableList> m_World;
-	std::ofstream m_OutFileStream;
 	HWND m_hWnd;
 	unsigned char* m_FrameBuffer;
 	D2D1Class* m_D2D1;

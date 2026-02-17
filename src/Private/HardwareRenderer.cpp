@@ -3,7 +3,7 @@
 #include "../Public/Timer.h"
 
 HardwareRenderer::HardwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_World(nullptr),
-m_ComputeShaderManager(nullptr), m_Device(nullptr), m_DeviceContext(nullptr), m_CSTransformBuffer(nullptr), m_CSMaterialBuffer(nullptr)
+m_ComputeShaderManager(nullptr), m_hWnd(NULL), m_Device(nullptr), m_DeviceContext(nullptr), m_CSTransformBuffer(nullptr), m_CSMaterialBuffer(nullptr)
 {
 
 }

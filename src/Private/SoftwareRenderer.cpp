@@ -5,7 +5,7 @@
 #include "../Public/SubMaterials.h"
 
 
-SoftwareRenderer::SoftwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_OutFileStream(std::ofstream()),
+SoftwareRenderer::SoftwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio),
 m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
 {
 
@@ -13,16 +13,9 @@ m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
 
 //Some of the viewport, fov, and aspect ratio logics can be moved into the camera class
 //But for this project such set up is fine. Or maybe we should move these logic into the constructor for RAII
-bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd, unsigned int SampleCount, unsigned int MaxDepth)
+bool SoftwareRenderer::Initialize(HWND hWnd, unsigned int SampleCount, unsigned int MaxDepth)
 {
 	bool Result = false;
-
-	m_OutFileStream.open(OutFileName, std::ios::out | std::ios::binary);
-	if (!m_OutFileStream.is_open())
-	{
-		MessageBox(NULL, L"Failed to open the file!", L"Error", MB_OK);
-		return false;
-	}
 	
 	m_hWnd = hWnd;
 
@@ -48,7 +41,6 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd, unsigned i
 	if (!m_FrameBuffer)
 	{
 		MessageBox(NULL, L"Failed to allocate frame buffer!", L"Error", MB_OK);
-		m_OutFileStream.close();
 		return false;
 	}
 
@@ -57,7 +49,6 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd, unsigned i
 	{
 		MessageBox(NULL, L"Failed to allocate D2D1 Class!", L"Error", MB_OK);
 		delete[] m_FrameBuffer;
-		m_OutFileStream.close();
 		return false;
 	}
 	Result = m_D2D1->InitFactory();
@@ -65,7 +56,6 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd, unsigned i
 	{
 		MessageBox(NULL, L"Failed to init D2D1 Class!", L"Error", MB_OK);
 		delete[] m_FrameBuffer;
-		m_OutFileStream.close();
 		return false;
 	}
 	if (FAILED(m_D2D1->CreateGraphicResources(hWnd)))
@@ -73,7 +63,6 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd, unsigned i
 		MessageBox(NULL, L"Failed to init D2D1 Class!", L"Error", MB_OK);
 		delete[] m_FrameBuffer;
 		m_D2D1->Shutdown();
-		m_OutFileStream.close();
 		return false;
 	}
 
@@ -86,41 +75,6 @@ bool SoftwareRenderer::Initialize(const char* OutFileName, HWND hWnd, unsigned i
 void SoftwareRenderer::ClearWindow()
 {
 	m_D2D1->ClearBackground();
-}
-
-void SoftwareRenderer::RenderPPM()
-{
-	/*
-	* Few things to note about getting the viewport upper left and the first pixel position:
-	* 1. The camera is pointing straight down the negative Z axis(Right-hand system btw), and pointing at the center of the viewport, hence subtracting focal length in Z
-	* 2. The viewport contains all the pixels(from 0th to Width - 1), however, we add half-pixel length spacings in both left-right and top-bottom, so the viewport can be divided nicely into Width x Height areas
-	* 3. Step 2 means we need to add half of the delta U and V to get to the first pixel location
-	*/
-	Point3D CameraCenter = m_Camera.CameraCenter;
-	Vector3D ViewportUpperLeft = CameraCenter - Vector3D(0.f, 0.f, m_Camera.FocusDistance) - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
-	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
-
-	m_OutFileStream << "P3\n" << m_Width << ' ' << m_Height << "\n255\n";
-	for (size_t i = 0; i < m_Height; i++)
-	{
-		for (size_t j = 0; j < m_Width; j++)
-		{
-			Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
-			Vector3D RayDirection = PixelPos - CameraCenter;
-			Ray CurrentRay = Ray(CameraCenter, RayDirection);
-
-			Color PixelColor = Color(0.f, 0.f, 0.f);
-			Vector3D UnitDirection = CurrentRay.Direction().Normalize();
-			float tx = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
-			//Bilinear interpolation stuffs. Tbh I don't even know what am I accomplishing with this logic
-			Color PixelColorX = (1.f - tx) * Color(0.f, 0.f, 1.f) + tx * Color(0.f, 0.1f, 1.f);
-			float ty = 0.5f * (UnitDirection.Y + 1.f);
-			PixelColor = (1.f - ty) * PixelColorX + ty * Color(1.f, 0.f, 0.f);
-			WriteColor(m_OutFileStream, PixelColor);
-		}
-	}
-	MessageBox(NULL, L"Render Complete!", L"Info", MB_OK);
-	m_OutFileStream.close();
 }
 
 void SoftwareRenderer::RenderFrameBuffer()
@@ -149,7 +103,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 		{
 			for (unsigned int j = 0; j < m_Width; j++)
 			{
-				Point3D PixelPos = FirstPixelPos + (j * m_DeltaU) + (i * m_DeltaV);
+				Point3D PixelPos = FirstPixelPos + ((float)j * m_DeltaU) + ((float)i * m_DeltaV);
 
 				Color PixelColor = Color(0.f, 0.f, 0.f);
 				PixelColor = m_Camera.CalculateHitColor(*m_World, PixelPos, m_DeltaU, m_DeltaV);
@@ -176,7 +130,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 	for (auto& Future : Futures)
 	{
 		int Scanline = Future.get();
-		RECT UpdateRegion{ 0, Scanline, m_Width, Scanline + 1};
+		RECT UpdateRegion{ 0, Scanline, (long)m_Width, Scanline + 1};
 		InvalidateRect(m_hWnd, &UpdateRegion, false);
 		UpdateWindow(m_hWnd);
 	}
@@ -195,7 +149,8 @@ void SoftwareRenderer::RenderToWindow()
 	m_D2D1->RenderBitmap(m_FrameBuffer);
 }
 
-void SoftwareRenderer::Shutdown()
+
+SoftwareRenderer::~SoftwareRenderer()
 {
 	if (m_D2D1)
 	{
@@ -204,7 +159,6 @@ void SoftwareRenderer::Shutdown()
 		m_D2D1 = nullptr;
 	}
 	delete[] m_FrameBuffer;
-	m_OutFileStream.close();
 }
 
 void SoftwareRenderer::CreateWorld()

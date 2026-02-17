@@ -95,6 +95,7 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 
 Point3D Camera::SampleDefocusDisk() const
 {
+	//Used to implement depth of field, not used in hardware renderer because I was lazy :(
 	Point3D Point = Vector3D::RandomOnUnitDisk();
 	return CameraCenter + Point.X * DefocusDiskU + Point.Y * DefocusDiskV;
 }
