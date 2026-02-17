@@ -41,7 +41,7 @@ private:
 	HWND m_WindowHandle;
 	HWND m_SettingsWindowHandle;
 	//For now I am going to keep both of these because we actully have two separate renderer class.
-	//Maybe in the future we can unify the two renderer into one class.
+	//Maybe we can unify the two renderer into one class.
 	//By the way we can use std::variant. But that still occupies the memory for two pointers and it adds complexity.
 	std::unique_ptr<SoftwareRenderer> m_SoftwareRenderer;
 	std::unique_ptr<HardwareRenderer> m_HardwareRenderer;
@@ -54,7 +54,10 @@ private:
 	//Dialog box stuffs
 	wchar_t m_CPUName[128];
 	wchar_t m_GPUName[128];
-	//These can break apart if we decide to add more resolutions, but for this project it would never happen
+	std::wstring m_STDCPUName;
+	std::wstring m_STDGPUName;
+	//Using vectors so we can potentially add more resolutions, sample, and max depth options in the future
+	//Doubt that would ever happen though
 	std::vector<std::pair<int, int>> m_Resolutions;
 	std::vector<unsigned int> m_SampleCounts;
 	std::vector<unsigned int> m_MaxDepths;
