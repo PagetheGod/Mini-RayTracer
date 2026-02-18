@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include "Public/Application.h"
+
 /*
 * A simple ray tracer built following the Peter Shirley's Ray Tracing In One Week Book: https://raytracing.github.io/books/RayTracingInOneWeekend.html#overview
 * With changes such as:

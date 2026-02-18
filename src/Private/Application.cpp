@@ -5,7 +5,6 @@
 #include <string.h>
 #include <array>
 
-
 #ifdef _MSC_VER
 //MSVC instrinsics
 #include <intrin.h>
@@ -17,11 +16,8 @@
 
 
 
-Application::Application() : m_WindowHandle(NULL), m_WindowClass(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr)
+Application::Application() : m_WindowHandle(NULL), m_WindowClass(NULL), m_SettingsWindowHandle(NULL), m_StartButtonHandle(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr)
 {
-	memset(m_CPUName, 0, sizeof(m_CPUName));
-	memset(m_GPUName, 0, sizeof(m_GPUName));
-	
 	//Initialize the vectors so we can easily retreive the values using the indices we get back from the combo boxes
 	m_Resolutions = { {640, 480}, {800, 600}, {1024, 768}, {1280, 720}, {1920, 1080}, {2560, 1440} };
 	m_SampleCounts = { 3, 5, 10, 15, 20, 50, 75, 100, 150, 200, 500 };
@@ -78,7 +74,7 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow)
 		0,
 		WindowClassName,
 		L"Ray Tracing in One Weekend",
-		WS_OVERLAPPEDWINDOW,
+		WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 		PosX,
 		PosY,
 		ActualWidth, ActualHeight,
@@ -151,6 +147,17 @@ LRESULT CALLBACK Application::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 			MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
 			return -1;
 		}
+
+		AppPtr->m_StartButtonHandle = CreateWindowEx(0,
+			L"BUTTON",
+			L"Start Render",
+		    WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
+			10, 10,
+			100, 35,
+			hWnd,
+			NULL,
+			WindowInitStruct->hInstance,
+			NULL);
 	}
 	else
 	{
@@ -198,6 +205,27 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 			}
 			return 0;
 		}
+		case WM_COMMAND:
+		{
+			if ((HWND)lParam == m_StartButtonHandle && (HIWORD(wParam) == BN_CLICKED))
+			{
+				DestroyWindow(m_StartButtonHandle);
+				ShowWindow(m_StartButtonHandle, SW_HIDE);
+				m_StartButtonHandle = NULL;
+				if (m_RendererType == RenderType::Software)
+				{
+					m_SoftwareRenderer->ClearWindow();
+					m_SoftwareRenderer->RenderFrameBuffer();
+				}
+				else
+				{
+					m_HardwareRenderer->ClearBackground();
+					m_HardwareRenderer->RenderScene();
+					
+				}
+				return 0;
+			}
+		}
 		case WM_PAINT:
 		{
 			if (m_IsFirstPaint)
@@ -211,6 +239,7 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 					m_HardwareRenderer->ClearBackground();
 				}
 				m_IsFirstPaint = false;
+				UpdateWindow(m_StartButtonHandle);
 			}
 			else
 			{
@@ -253,87 +282,70 @@ long long Application::SettingsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
 		HWND ComboListHandle;
 		//The dialog box is created, initialize the drop down list contents
 		ComboListHandle = GetDlgItem(hDlg, IDC_COMBO_RESOLUTION);
-		wchar_t ListContents[256];
 
-		std::wstring STDListContents;
-		STDListContents.reserve(256);
+		//Trying out std::format for the drop down list items. This replaced StringCbPrintfExW().
+		//However, do note that this comes with the cost of extra allocations. In the scope of this project it's not an issue
+		//But it's a tradeoff we should not just ignore
+		std::wstring ListContents;
+		ListContents.reserve(256);
 
-		memset(ListContents, 0, sizeof(ListContents));
 		for (const auto& [Width, Height] : AppPtr->m_Resolutions)
 		{
 			if (Width >= 1920)
 			{
-				StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%dx%d (compatibility issues with laptops)", Width, Height);
-				//STDListContents = std::format(L"{}x{} (compatibility issues with laptops)", Width, Height);
+				ListContents = std::format(L"{}x{} (compatibility issues with laptops)", Width, Height);
 			}
 			else
 			{
-				StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%dx%d", Width, Height);
-				//STDListContents = std::format(L"{}x{}", Width, Height);
+				ListContents = std::format(L"{}x{}", Width, Height);
 			}
-			SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
-			//SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)STDListContents.data());
+			SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents.data());
 		}
 		SendMessageW(ComboListHandle, CB_SETCURSEL, 3, 0); //Set default selection to 1920x1080
 		//Initialize render type combo list
 		ComboListHandle = GetDlgItem(hDlg, IDC_RENDER_TYPE);
-		memset(ListContents, 0, sizeof(ListContents));
-		//STDListContents.clear();
+		ListContents.clear();
 
 		AppPtr->GetCPUName();
-		StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"Software (%s)", AppPtr->m_CPUName);
-		//STDListContents = std::format(L"Software ({}) (compatibility issues with laptops)", AppPtr->m_STDCPUName);
-		SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
-		//SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)STDListContents.data());
+		ListContents = std::format(L"Software ({})", AppPtr->m_CPUName);
+		SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents.data());
 
-
-		memset(ListContents, 0, sizeof(ListContents));
-		//STDListContents.clear();
+		ListContents.clear();
 		AppPtr->GetGPUName();
-		StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"Hardware (%s)", AppPtr->m_GPUName);
-		//STDListContents = std::format(L"Hardware ({}) (compatibility issues with laptops)", AppPtr->m_STDGPUName);
-		SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
-		//SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)STDListContents.data());
+		ListContents = std::format(L"Hardware ({})", AppPtr->m_GPUName);
+		SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents.data());
 
 		SendMessageW(ComboListHandle, CB_SETCURSEL, 1, 0); //Set default selection to hardware rendering
 		//Initialize sample count combo list
 		ComboListHandle = GetDlgItem(hDlg, IDC_COMBO_SAMPLE);
-		memset(ListContents, 0, sizeof(ListContents));
-		//STDListContents.clear();
+		ListContents.clear();
 		for (const unsigned int SampleCount : AppPtr->m_SampleCounts)
 		{
 			if (SampleCount >= 150)
 			{
-				StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%u (increases render time)", SampleCount);
-				//STDListContents = std::format(L"{} (increases render time)", SampleCount);
+				ListContents = std::format(L"{} (increases render time)", SampleCount);
 			}
 			else
 			{
-				StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%u", SampleCount);
-				//STDListContents = std::format(L"{}", SampleCount);
+				ListContents = std::format(L"{}", SampleCount);
 			}
-			SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
-			//SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)STDListContents.data());
+			SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents.data());
 		}
 		SendMessageW(ComboListHandle, CB_SETCURSEL, 7, 0); //Set default selection to 100 samples per pixel
 		//Initialize max depth combo list
 		ComboListHandle = GetDlgItem(hDlg, IDC_COMBO_DEPTH);
-		memset(ListContents, 0, sizeof(ListContents));
-		//STDListContents.clear();
+		ListContents.clear();
 		for (const unsigned int MaxDepth : AppPtr->m_MaxDepths)
 		{
 			if (MaxDepth >= 25)
 			{
-				StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%u (increases render time)", MaxDepth);
-				//STDListContents = std::format(L"{} (increases render time)", MaxDepth);
+				ListContents = std::format(L"{} (increases render time)", MaxDepth);
 			}
 			else
 			{
-				StringCbPrintfExW(ListContents, 256, NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%u", MaxDepth);
-				//STDListContents = std::format(L"{}", MaxDepth);
+				ListContents = std::format(L"{}", MaxDepth);
 			}
-			SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents);
-			//SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)STDListContents.data());
+			SendMessageW(ComboListHandle, CB_ADDSTRING, 0, (LPARAM)ListContents.data());
 		}
 		SendMessageW(ComboListHandle, CB_SETCURSEL, 2, 0);//Set default selection to 15 max depth	
 		return TRUE;
@@ -404,7 +416,7 @@ void Application::GetCPUName()
 	if (!Result)
 	{
 		//GCC and Clang return 0 if the CPU does not support the leaf
-		wcscpy(m_CPUName, L"Unknown CPU");
+		m_CPUName = L"Unknown CPU";
 		return;
 	}
 #endif
@@ -437,7 +449,7 @@ void Application::GetCPUName()
 	#ifdef _MSC_VER
 		strcpy_s(CPUBrandString, "Unknown CPU");
 	#else
-		strncpy(CPUBrandString, "Unknown CPU", strlen("Unknown CPU") + 1);
+		strcpy(CPUBrandString, "Unknown CPU");
 	#endif
 	}
 	//Store the CPU name in the m_CPUName member variable, which is used for display in the settings dialog box
@@ -449,13 +461,16 @@ void Application::GetCPUName()
 		i--;
 	}
 
-	size_t ConvertedChars = 0;
+	
+	wchar_t CPUBrandStringW[64];
 #ifdef _MSC_VER
-	mbstowcs_s(&ConvertedChars, m_CPUName, CPUBrandString, i + 1);
-	//m_STDCPUName = std::format(L"{}", CPUBrandString);
+	size_t ConvertedChars = 0;
+	mbstowcs_s(&ConvertedChars, CPUBrandStringW, CPUBrandString, i + 1);
 #else
-	mbstowcs(m_CPUName, CPUBrandString, i + 1);
+	std::mbstowcs(CPUBrandStringW, CPUBrandString, i + 1);
 #endif
+	m_CPUName = CPUBrandStringW;
+
 }
 
 void Application::GetGPUName()
@@ -468,7 +483,7 @@ void Application::GetGPUName()
 	Result = CreateDXGIFactory1(__uuidof(IDXGIFactory), (void**)(&DXGIFactory));
 	if (FAILED(Result))
 	{
-		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%ls", L"Unknown GPU");
+		m_GPUName = L"Unknown GPU";
 		return;
 	}
 
@@ -476,7 +491,7 @@ void Application::GetGPUName()
 	if (FAILED(Result))
 	{
 		DXGIFactory->Release();
-		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%ls", L"Unknown GPU");
+		m_GPUName = L"Unknown GPU";
 		return;
 	}
 
@@ -486,16 +501,13 @@ void Application::GetGPUName()
 	{
 		DXGIFactory->Release();
 		DXGIAdapter->Release();
-		StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%ls", L"Unknown GPU");
+		m_GPUName = L"Unknown GPU";
 		return;
 	}
 
 	//Get the actual GPU name and memory. They are wide chars which means we have to have a wchar_t array
 	unsigned long long VideoMemGB = AdapterDesc.DedicatedVideoMemory / (1024 * 1024 * 1024);
-#ifdef _MSC_VER
-	StringCbPrintfExW(m_GPUName, sizeof(m_GPUName), NULL, NULL, STRSAFE_NULL_ON_FAILURE, L"%s - %llu GB", AdapterDesc.Description, VideoMemGB);
-	//m_STDGPUName = std::format(L"{} - {} GB", AdapterDesc.Description, VideoMemGB);
-#endif
+	m_GPUName = std::format(L"{} - {} GB", AdapterDesc.Description, VideoMemGB);
 	DXGIFactory->Release();
 	DXGIAdapter->Release();
 }

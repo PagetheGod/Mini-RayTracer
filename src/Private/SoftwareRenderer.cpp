@@ -3,10 +3,10 @@
 #include "../Public/Timer.h"
 #include "../Public/VMaterial.h"
 #include "../Public/SubMaterials.h"
-
+#include <format>
 
 SoftwareRenderer::SoftwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio),
-m_World(nullptr), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
+m_World(nullptr), m_hWnd(NULL), m_FrameBuffer(nullptr), m_D2D1(nullptr), m_ThreadPool(nullptr)
 {
 
 }
@@ -137,8 +137,10 @@ void SoftwareRenderer::RenderFrameBuffer()
 
 	RenderTimer.Stop();
 	RenderTime = (double)RenderTimer.GetLastDuration() / 1000.0;
-	std::vector<char> CompleteMessage(128);
-	StringCbPrintfExA(CompleteMessage.data(), 128, NULL, NULL, STRSAFE_NULL_ON_FAILURE, "Render Complete! Time used: %0.3f", RenderTime);
+
+	std::string CompleteMessage;
+	CompleteMessage.reserve(128);
+	CompleteMessage = std::format("Render Complete! Time used: {:.3f}", RenderTime);
 	MessageBoxExA(NULL, CompleteMessage.data(), LPCSTR{"Info"}, MB_OK, NULL);
 
 	DestroyWindow(m_hWnd);

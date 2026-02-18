@@ -40,6 +40,7 @@ private:
 	WNDCLASS m_WindowClass;
 	HWND m_WindowHandle;
 	HWND m_SettingsWindowHandle;
+	HWND m_StartButtonHandle;
 	//For now I am going to keep both of these because we actully have two separate renderer class.
 	//Maybe we can unify the two renderer into one class.
 	//By the way we can use std::variant. But that still occupies the memory for two pointers and it adds complexity.
@@ -52,10 +53,8 @@ private:
 	unsigned int m_SampleCount = 0;
 	unsigned int m_MaxDepth = 0;
 	//Dialog box stuffs
-	wchar_t m_CPUName[128];
-	wchar_t m_GPUName[128];
-	std::wstring m_STDCPUName;
-	std::wstring m_STDGPUName;
+	std::wstring m_CPUName;
+	std::wstring m_GPUName;
 	//Using vectors so we can potentially add more resolutions, sample, and max depth options in the future
 	//Doubt that would ever happen though
 	std::vector<std::pair<int, int>> m_Resolutions;

@@ -6,7 +6,7 @@
 #include <Windows.h>
 #include "Sphere.h"
 #include "Camera.h"
-#include <strsafe.h>
+
 
 
 class ComputeShaderManager;
