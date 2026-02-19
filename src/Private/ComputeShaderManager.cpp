@@ -1,9 +1,9 @@
 #include "../Public/ComputeShaderManager.h"
 #include "../Public/Camera.h"
 
-ComputeShaderManager::ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext, unsigned int ScreenWidth, unsigned int ScreenHeight ) : m_Device(Device), m_DeviceContext(DeviceContext), 
-m_CSConstantBuffer(nullptr), m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_ComputeOutputBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr), 
-m_ComputeOutputUAV(nullptr), m_ObjectCount(0), m_Width(ScreenWidth), m_Height(ScreenHeight)
+ComputeShaderManager::ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext, unsigned int ScreenWidth, unsigned int ScreenHeight) : m_Device(Device), m_DeviceContext(DeviceContext),
+m_CSConstantBuffer(nullptr), m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_ComputeOutputBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr),
+m_ComputeOutputUAV(nullptr), m_CSBeginQuery(nullptr), m_CSEndQuery(nullptr), m_DisjointQuery(nullptr), m_Width(ScreenWidth), m_Height(ScreenHeight)
 {
 }
 
@@ -238,7 +238,71 @@ bool ComputeShaderManager::SetShaderParams(const XMFLOAT3& CameraPos, const XMFL
 void ComputeShaderManager::DispatchShader()
 {	
 	m_DeviceContext->CSSetShader(m_ComputeShader, nullptr, 0);
+
+	D3D11_QUERY_DESC QueryDesc{};
+	QueryDesc.Query = D3D11_QUERY_TIMESTAMP;
+	HRESULT Result = m_Device->CreateQuery(&QueryDesc, &m_CSBeginQuery);
+	if (FAILED(Result))
+	{
+		m_ShouldTime = false;
+	}
+	Result = m_Device->CreateQuery(&QueryDesc, &m_CSEndQuery);
+	if (FAILED(Result))
+	{
+		m_ShouldTime = false;
+	}
+	QueryDesc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+	Result = m_Device->CreateQuery(&QueryDesc, &m_DisjointQuery);
+	if (FAILED(Result))
+	{
+		m_ShouldTime = false;
+	}
+	if (m_ShouldTime)
+	{
+		m_DeviceContext->Begin(m_DisjointQuery);
+		m_DeviceContext->End(m_CSBeginQuery);
+	}
 	m_DeviceContext->Dispatch(m_Width / 8, m_Height / 8, 1);
+	if (m_ShouldTime)
+	{
+		m_DeviceContext->End(m_CSEndQuery);
+		m_DeviceContext->End(m_DisjointQuery);
+	}
+	
+}
+
+void ComputeShaderManager::GetGPURenderTime(std::wstring& RenderTimeString)
+{
+	//Function to fill in a target render time string
+	//Will fill in a corresponding message if we failed to create the query objects
+	if (!m_ShouldTime)
+	{
+		RenderTimeString = L"Failed to create DX11 queries. No GPU render time is available";
+	}
+	else
+	{
+		while (m_DeviceContext->GetData(m_DisjointQuery, nullptr, 0, 0) == S_FALSE)
+		{
+			Sleep(1);
+		}
+		D3D11_QUERY_DATA_TIMESTAMP_DISJOINT DisjointTS;
+		HRESULT Result = m_DeviceContext->GetData(m_DisjointQuery, &DisjointTS, sizeof(DisjointTS), 0);
+		if (DisjointTS.Disjoint)
+		{
+			RenderTimeString = L"GPU frame was disjoint. No render time is available";
+		}
+		else
+		{
+			uint64_t CSStart, CSEnd;
+			m_DeviceContext->GetData(m_CSBeginQuery, &CSStart, sizeof(uint64_t), 0);
+			m_DeviceContext->GetData(m_CSEndQuery, &CSEnd, sizeof(uint64_t), 0);
+
+			//Result is in raw clock ticks
+			double RenderTime = ((double)CSEnd - (double)CSStart)/(double)DisjointTS.Frequency;
+
+			RenderTimeString = std::format(L"GPU Computation Took {:.3f} Seconds", RenderTime);
+		}
+	}
 }
 
 
@@ -285,5 +349,20 @@ ComputeShaderManager::~ComputeShaderManager()
 	{
 		m_ComputeOutputUAV->Release();
 		m_ComputeOutputUAV = nullptr;
+	}
+	if (m_CSBeginQuery)
+	{
+		m_CSBeginQuery->Release();
+		m_CSBeginQuery = nullptr;
+	}
+	if (m_CSEndQuery)
+	{
+		m_CSEndQuery->Release();
+		m_CSEndQuery = nullptr;
+	}
+	if (m_DisjointQuery)
+	{
+		m_DisjointQuery->Release();
+		m_DisjointQuery = nullptr;
 	}
 }

@@ -16,7 +16,7 @@
 
 
 
-Application::Application() : m_WindowHandle(NULL), m_WindowClass(NULL), m_SettingsWindowHandle(NULL), m_StartButtonHandle(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr)
+Application::Application() : m_WindowHandle(NULL), m_WindowClass(NULL), m_SettingsWindowHandle(NULL), m_StartButtonHandle(NULL), m_RenderTimeLabel(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr)
 {
 	//Initialize the vectors so we can easily retreive the values using the indices we get back from the combo boxes
 	m_Resolutions = { {640, 480}, {800, 600}, {1024, 768}, {1280, 720}, {1920, 1080}, {2560, 1440} };
@@ -147,7 +147,7 @@ LRESULT CALLBACK Application::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 			MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
 			return -1;
 		}
-
+		//Create the start render button
 		AppPtr->m_StartButtonHandle = CreateWindowEx(0,
 			L"BUTTON",
 			L"Start Render",
@@ -158,6 +158,21 @@ LRESULT CALLBACK Application::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 			NULL,
 			WindowInitStruct->hInstance,
 			NULL);
+		//Create the render time label
+		//We are using a static text to display the GPU render time because message box actually cause hang
+		//For reasons unknown to me :(
+		AppPtr->m_RenderTimeLabel = CreateWindowEx(0,
+			L"STATIC",
+			L"Starting Render...",
+			WS_VISIBLE | WS_CHILD | SS_LEFT | SS_SUNKEN,
+			120, 15,
+			350, 20,
+			hWnd,
+			NULL,
+			WindowInitStruct->hInstance,
+			NULL);
+		SendMessage(AppPtr->m_RenderTimeLabel, WM_SETFONT,
+			(WPARAM)GetStockObject(DEFAULT_GUI_FONT), TRUE);
 	}
 	else
 	{
@@ -191,29 +206,19 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 			{
 				DestroyWindow(hWnd);
 			}
-			else if (wParam == VK_RETURN)
-			{
-				if (m_RendererType == RenderType::Software)
-				{
-					m_SoftwareRenderer->RenderFrameBuffer();
-				}
-				else
-				{
-					m_HardwareRenderer->RenderScene();
-				}
-				
-			}
 			return 0;
 		}
 		case WM_COMMAND:
 		{
 			if ((HWND)lParam == m_StartButtonHandle && (HIWORD(wParam) == BN_CLICKED))
 			{
+				//Destory the start render button so we don't click it multiple times
 				DestroyWindow(m_StartButtonHandle);
 				ShowWindow(m_StartButtonHandle, SW_HIDE);
 				m_StartButtonHandle = NULL;
 				if (m_RendererType == RenderType::Software)
 				{
+					//Clear the window before we start the rendering so the start button goes away
 					m_SoftwareRenderer->ClearWindow();
 					m_SoftwareRenderer->RenderFrameBuffer();
 				}
@@ -221,7 +226,8 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 				{
 					m_HardwareRenderer->ClearBackground();
 					m_HardwareRenderer->RenderScene();
-					
+					//Set the static text that will display the render time
+					SetWindowTextW(m_RenderTimeLabel, m_HardwareRenderer->GetRenderTimeString().c_str());
 				}
 				return 0;
 			}
@@ -240,6 +246,7 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 				}
 				m_IsFirstPaint = false;
 				UpdateWindow(m_StartButtonHandle);
+				UpdateWindow(m_RenderTimeLabel);
 			}
 			else
 			{

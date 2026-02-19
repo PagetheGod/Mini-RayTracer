@@ -3,7 +3,7 @@
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
-
+#include <format>
 
 
 using namespace DirectX;
@@ -51,7 +51,8 @@ public:
 	bool SetShaderParams(const XMFLOAT3& CameraPos, const XMFLOAT3& ViewportUpperLeft, const XMFLOAT3& FirstPixelPos, const XMFLOAT3& DeltaU, const XMFLOAT3& DeltaV,
 		const SphereTransformBufferType* SphereTransforms, const SphereMaterialBufferType* SphereMaterials);
 	void DispatchShader();
-	
+	void GetGPURenderTime(std::wstring& RenderTimeString);
+
 	ID3D11Texture2D* GetComputeOutputBuffer() { return m_ComputeOutputBuffer; }
 
 public:
@@ -68,7 +69,12 @@ private:
 	ID3D11ShaderResourceView* m_TransformSRV;
 	ID3D11ShaderResourceView* m_MaterialSRV;
 	ID3D11UnorderedAccessView* m_ComputeOutputUAV;
-	unsigned int m_ObjectCount;
+	//Query objects to do a quick and dirty gpu timing
+	ID3D11Query* m_CSBeginQuery;
+	ID3D11Query* m_CSEndQuery;
+	ID3D11Query* m_DisjointQuery;
+	bool m_ShouldTime = true;
+	unsigned int m_ObjectCount = 0;
 	unsigned int m_Width;
 	unsigned int m_Height;
 	unsigned int m_MaxDepth;

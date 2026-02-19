@@ -41,6 +41,7 @@ private:
 	HWND m_WindowHandle;
 	HWND m_SettingsWindowHandle;
 	HWND m_StartButtonHandle;
+	HWND m_RenderTimeLabel;
 	//For now I am going to keep both of these because we actully have two separate renderer class.
 	//Maybe we can unify the two renderer into one class.
 	//By the way we can use std::variant. But that still occupies the memory for two pointers and it adds complexity.

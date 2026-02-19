@@ -95,6 +95,8 @@ bool HardwareRenderer::RenderScene()
 	m_ComputeShaderManager->DispatchShader();
 	FillBackBuffer();
 	m_D3D11->PresentScene();
+	//Get the render time for the gpu rendering
+	m_ComputeShaderManager->GetGPURenderTime(m_RenderTimeString);
 	return Result;
 }
 

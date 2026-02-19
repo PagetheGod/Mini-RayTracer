@@ -22,6 +22,7 @@ public:
 	bool RenderScene();
 	void FillBackBuffer();
 	void ClearBackground();
+	const std::wstring& GetRenderTimeString() const { return m_RenderTimeString; }
 
 private:
 	void CreateWorld();
@@ -45,4 +46,5 @@ private:
 	ID3D11DeviceContext* m_DeviceContext;
 	SphereTransformBufferType* m_CSTransformBuffer;
 	SphereMaterialBufferType* m_CSMaterialBuffer;
+	std::wstring m_RenderTimeString;
 };
