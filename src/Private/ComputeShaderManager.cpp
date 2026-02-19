@@ -300,7 +300,7 @@ void ComputeShaderManager::GetGPURenderTime(std::wstring& RenderTimeString)
 			//Result is in raw clock ticks
 			double RenderTime = ((double)CSEnd - (double)CSStart)/(double)DisjointTS.Frequency;
 
-			RenderTimeString = std::format(L"GPU Computation Took {:.3f} Seconds", RenderTime);
+			RenderTimeString = std::format(L"Render Complete! Time used: {:.3f} seconds", RenderTime);
 		}
 	}
 }

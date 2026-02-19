@@ -19,6 +19,7 @@ public:
 	void ClearWindow();
 	void RenderFrameBuffer();
 	void RenderToWindow();
+	const std::wstring& GetRenderTimeString() { return m_RenderTimeString; }
 
 	~SoftwareRenderer();
 
@@ -40,5 +41,6 @@ private:
 	unsigned char* m_FrameBuffer;
 	D2D1Class* m_D2D1;
 	std::unique_ptr <VThreadPool> m_ThreadPool;
+	std::wstring m_RenderTimeString;
 	
 };

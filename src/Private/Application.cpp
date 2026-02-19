@@ -159,8 +159,10 @@ LRESULT CALLBACK Application::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 			WindowInitStruct->hInstance,
 			NULL);
 		//Create the render time label
-		//We are using a static text to display the GPU render time because message box actually cause hang
-		//For reasons unknown to me :(
+		//We are using a static text to display the GPU render time 
+		//Because the message box has some really weird interactions with DX11 swap chain present
+		//I just couldn't get the message box to display normally in hardware rendering path, and it just causes the application to hang indefinitiely
+		//So I am opting for a static text label instead.
 		AppPtr->m_RenderTimeLabel = CreateWindowEx(0,
 			L"STATIC",
 			L"Starting Render...",
@@ -220,11 +222,14 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 				{
 					//Clear the window before we start the rendering so the start button goes away
 					m_SoftwareRenderer->ClearWindow();
+					SetWindowTextW(m_RenderTimeLabel, L"Rendering...");
 					m_SoftwareRenderer->RenderFrameBuffer();
+					SetWindowTextW(m_RenderTimeLabel, m_SoftwareRenderer->GetRenderTimeString().c_str());
 				}
 				else
 				{
 					m_HardwareRenderer->ClearBackground();
+					SetWindowTextW(m_RenderTimeLabel, L"Rendering...");
 					m_HardwareRenderer->RenderScene();
 					//Set the static text that will display the render time
 					SetWindowTextW(m_RenderTimeLabel, m_HardwareRenderer->GetRenderTimeString().c_str());
@@ -245,6 +250,7 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 					m_HardwareRenderer->ClearBackground();
 				}
 				m_IsFirstPaint = false;
+				//Update the button and render time static text after we clear the background so they display normally
 				UpdateWindow(m_StartButtonHandle);
 				UpdateWindow(m_RenderTimeLabel);
 			}

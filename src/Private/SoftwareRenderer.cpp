@@ -129,6 +129,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 
 	for (auto& Future : Futures)
 	{
+		//Get() will block until we have a valid result to retrieve
 		int Scanline = Future.get();
 		RECT UpdateRegion{ 0, Scanline, (long)m_Width, Scanline + 1};
 		InvalidateRect(m_hWnd, &UpdateRegion, false);
@@ -138,12 +139,7 @@ void SoftwareRenderer::RenderFrameBuffer()
 	RenderTimer.Stop();
 	RenderTime = (double)RenderTimer.GetLastDuration() / 1000.0;
 
-	std::string CompleteMessage;
-	CompleteMessage.reserve(128);
-	CompleteMessage = std::format("Render Complete! Time used: {:.3f}", RenderTime);
-	MessageBoxExA(NULL, CompleteMessage.data(), LPCSTR{"Info"}, MB_OK, NULL);
-
-	DestroyWindow(m_hWnd);
+	m_RenderTimeString = std::format(L"Render Complete! Time used: {:.3f} seconds", RenderTime);
 }
 
 void SoftwareRenderer::RenderToWindow()
