@@ -1,7 +1,6 @@
 #include "../Public/Camera.h"
 #include "../Public/Material.h"
 #include "../Public/VMaterial.h"
-#include <stack>
 
 //Initialize camera parameters and delta U,V
 //The camera center is also the origin of our coordinate system

@@ -2,6 +2,7 @@
 
 #include "HittableList.h"
 
+//This class is not used by the project as of right now due to design decisions I amde
 class Sphere : public Hittable
 {
 public:
