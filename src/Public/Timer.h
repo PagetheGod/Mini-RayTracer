@@ -11,7 +11,7 @@
 
 
 
-using STDTimePoint = std::chrono::steady_clock::time_point;
+using STDTimePoint = std::chrono::high_resolution_clock::time_point;
 
 
 class VTimer

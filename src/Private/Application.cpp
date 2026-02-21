@@ -432,6 +432,11 @@ void Application::GetCPUName()
 		m_CPUName = L"Unknown CPU";
 		return;
 	}
+
+	CPUIDInfo[0] = static_cast<int>(EAX);
+	CPUIDInfo[1] = static_cast<int>(EBX);
+	CPUIDInfo[2] = static_cast<int>(ECX);
+	CPUIDInfo[3] = static_cast<int>(EDX);
 #endif
 	int NumExtendedIDs = CPUIDInfo[0];
 	std::vector<std::array<int, 4>> ExtendedCPUIDInfo;
