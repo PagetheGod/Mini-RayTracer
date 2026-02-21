@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Commons.h"
+#ifndef _MSC_VER
+#include<algorithm>
+#endif
 
 class Interval
 {

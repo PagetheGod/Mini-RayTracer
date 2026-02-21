@@ -30,6 +30,10 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 	$<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Debug>>:-Wall -Wextra -O0>
 	$<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-w -O3>
 )
+
+target_link_options(${PROJECT_NAME} PRIVATE
+	 $<$<CXX_COMPILER_ID:GNU>:-municode>
+)
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso
 	COMMAND fxc /T cs_5_0 /E main /Fo ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl
