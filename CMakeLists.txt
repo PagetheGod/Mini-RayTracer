@@ -13,38 +13,40 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/Binaries/Output/Release
 )
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE UNICODE_UNICODE)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
 	Resources/
 )
 
 add_custom_command(
-	OUTPUT Shaders/RayTraceShader.cso
-	COMMAND fxc /T cs_5_0 /E main /Fo Shaders/RayTraceShader.cso src/Shaders/RayTraceComputeShader.hlsl
-	DEPENDS src/Shaders/RayTraceComputeShader.hlsl
+	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso
+	COMMAND fxc /T cs_5_0 /E main /Fo ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl
 	COMMENT "Compiling HLSL compute shader"
 )
 
 target_sources(${PROJECT_NAME} 
     PRIVATE
-	src/main.cxx
-	src/Private/Application.cxx
-	src/Private/Camera.cxx
-	src/Private/Color.cxx
-	src/Private/ComputeShaderManager.cxx
-	src/Private/D2D1Class.cxx
-	src/Private/D3D11Class.cxx
-	src/Private/HardwareRenderer.cxx
-	src/Private/Hittable.cxx
-	src/Private/HittableList.cxx
-	src/Private/Interval.cxx
-	src/Private/Ray.cxx
-	src/Private/SoftwareRenderer.cxx
-	src/Private/Sphere.cxx
-	src/Private/SubMaterials.cxx
-	src/Private/ThreadPool.cxx
-	src/Private/Timer.cxx
-	src/Private/Vector3D.cxx
-	src/Private/VMaterial.cxx
+	src/main.cpp
+	src/Private/Application.cpp
+	src/Private/Camera.cpp
+	src/Private/Color.cpp
+	src/Private/ComputeShaderManager.cpp
+	src/Private/D2D1Class.cpp
+	src/Private/D3D11Class.cpp
+	src/Private/HardwareRenderer.cpp
+	src/Private/Hittable.cpp
+	src/Private/HittableList.cpp
+	src/Private/Interval.cpp
+	src/Private/Ray.cpp
+	src/Private/SoftwareRenderer.cpp
+	src/Private/Sphere.cpp
+	src/Private/SubMaterials.cpp
+	src/Private/ThreadPool.cpp
+	src/Private/Timer.cpp
+	src/Private/Vector3D.cpp
+	src/Private/VMaterial.cpp
 
 	Shaders/RayTraceShader.cso
 	
