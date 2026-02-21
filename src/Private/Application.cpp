@@ -1,7 +1,7 @@
 #include "../Public/Application.h"
 #include "../Public/SoftwareRenderer.h"
 #include "../Public/HardwareRenderer.h"
-#include "../../resource.h"
+#include "../../Resources/resource.h"
 #include <string.h>
 #include <array>
 

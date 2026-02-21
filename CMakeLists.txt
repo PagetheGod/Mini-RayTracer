@@ -7,6 +7,10 @@ add_executable(${PROJECT_NAME} WIN32)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+target_include_directories(${PROJECT_NAME} PRIVATE
+	Resources/
+)
+
 target_sources(${PROJECT_NAME} 
     PRIVATE
 	src/main.cxx
@@ -28,6 +32,9 @@ target_sources(${PROJECT_NAME}
 	src/Private/Timer.cxx
 	src/Private/Vector3D.cxx
 	src/Private/VMaterial.cxx
+
+	Resources/Settings.rc
+	Resources/app.manifest
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
