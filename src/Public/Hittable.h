@@ -13,7 +13,7 @@
 */
 
 class Material;
-enum MaterialType;
+enum MaterialType : uint8_t;
 
 
 struct HitRecord
