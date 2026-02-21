@@ -13,7 +13,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/Binaries/Output/Release
 )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE UNICODE_UNICODE)
+target_compile_definitions(${PROJECT_NAME} PRIVATE UNICODE _UNICODE)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
 	Resources/
