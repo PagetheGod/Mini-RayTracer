@@ -35,6 +35,7 @@ target_link_options(${PROJECT_NAME} PRIVATE
 	 $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:/LTCG>
 	 $<$<CXX_COMPILER_ID:GNU>:-municode>
  	 $<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Release>>:-flto>
+	 $<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-flto>
 )
 
 add_custom_command(
