@@ -8,3 +8,5 @@ Output/
 *.user
 #ppm Output
 *.ppm
+#compiled shaders
+*.cso
