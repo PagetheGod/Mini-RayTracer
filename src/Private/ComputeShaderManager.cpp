@@ -16,7 +16,7 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 	m_MaxDepth = Depth;
 	m_SampleCount = SampleCount;
 	m_ObjectCount = ObjectCount;
-	Result = D3DReadFileToBlob(L"../../../Shaders/RayTraceComputeShader.cso", &ShaderBlob);
+	Result = D3DReadFileToBlob(L"../../../Shaders/RayTraceShader.cso", &ShaderBlob);
 	if (FAILED(Result))
 	{
 		wchar_t ErrorMessage[128];
