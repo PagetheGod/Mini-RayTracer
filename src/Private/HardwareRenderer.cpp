@@ -1,6 +1,6 @@
-#include "../Public/HardwareRenderer.h"
-#include "../Public/ComputeShaderManager.h"
-#include "../Public/Timer.h"
+#include "Public/HardwareRenderer.h"
+#include "Public/ComputeShaderManager.h"
+#include "Public/Timer.h"
 
 HardwareRenderer::HardwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio), m_World(nullptr),
 m_ComputeShaderManager(nullptr), m_hWnd(NULL), m_Device(nullptr), m_DeviceContext(nullptr), m_CSTransformBuffer(nullptr), m_CSMaterialBuffer(nullptr)
@@ -75,8 +75,6 @@ bool HardwareRenderer::RenderScene()
 	Point3D CameraCenter = m_Camera.CameraCenter;
 	Vector3D ViewportUpperLeft = CameraCenter - m_Camera.CameraW * m_Camera.FocusDistance - (m_ViewportU / 2.f) - (m_ViewportV / 2.f);
 	Point3D FirstPixelPos = ViewportUpperLeft + 0.5f * (m_DeltaU + m_DeltaV);
-	double RenderTime = 0.0;
-	VTimer RenderTimer;
 	
 	const XMFLOAT3 CameraCenterPos(CameraCenter.X, CameraCenter.Y, CameraCenter.Z);
 	const XMFLOAT3 ViewportUpperLeftPos(ViewportUpperLeft.X, ViewportUpperLeft.Y, ViewportUpperLeft.Z);

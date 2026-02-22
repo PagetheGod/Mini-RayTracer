@@ -1,5 +1,5 @@
-#include "../Public/ComputeShaderManager.h"
-#include "../Public/Camera.h"
+#include "Public/ComputeShaderManager.h"
+#include "Public/Camera.h"
 
 ComputeShaderManager::ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext, unsigned int ScreenWidth, unsigned int ScreenHeight) : m_Device(Device), m_DeviceContext(DeviceContext),
 m_CSConstantBuffer(nullptr), m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_ComputeOutputBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr),
@@ -286,7 +286,7 @@ void ComputeShaderManager::GetGPURenderTime(std::wstring& RenderTimeString)
 			Sleep(1);
 		}
 		D3D11_QUERY_DATA_TIMESTAMP_DISJOINT DisjointTS;
-		HRESULT Result = m_DeviceContext->GetData(m_DisjointQuery, &DisjointTS, sizeof(DisjointTS), 0);
+		m_DeviceContext->GetData(m_DisjointQuery, &DisjointTS, sizeof(DisjointTS), 0);
 		if (DisjointTS.Disjoint)
 		{
 			RenderTimeString = L"GPU frame was disjoint. No render time is available";

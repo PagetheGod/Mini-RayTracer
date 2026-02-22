@@ -1,4 +1,4 @@
-#include "../Public/Hittable.h"
+#include "Public/Hittable.h"
 
 void Hittable::SetFaceNormal(const Ray& R, const Vector3D& OutwardNormal, HitRecord& OutHitRecord)
 {

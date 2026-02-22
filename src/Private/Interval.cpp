@@ -1,4 +1,4 @@
-#include "../Public/Interval.h"
+#include "Public/Interval.h"
 
 
 const Interval Interval::g_Empty = Interval();

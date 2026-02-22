@@ -1,4 +1,4 @@
-#include "../Public/Timer.h"
+#include "Public/Timer.h"
 
 using namespace std::chrono;
 

@@ -1,4 +1,4 @@
-#include "../Public/Sphere.h"
+#include "Public/Sphere.h"
 
 Sphere::Sphere(const Point3D& InCenter, const float InRadius, std::shared_ptr<Material> InMaterial) : m_Center(InCenter), m_Radius(std::fmax(0.f, InRadius)), 
 m_Material(InMaterial)

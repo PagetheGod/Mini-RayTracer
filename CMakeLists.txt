@@ -3,7 +3,7 @@ project(MiniRayTracer DESCRIPTION "CMake build for a mini ray tracer using Win32
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 add_executable(${PROJECT_NAME} WIN32)
@@ -13,10 +13,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/Binaries/Output/Release
 )
 
+#Unicode def for MSVC(wWinMain)
 target_compile_definitions(${PROJECT_NAME} PRIVATE UNICODE _UNICODE)
 
+#Win32 resources include
 target_include_directories(${PROJECT_NAME} PRIVATE
 	Resources/
+	src/
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE
@@ -31,6 +34,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 	$<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-w -O3>
 )
 
+#Enables linked time optimizations for all compilers
 target_link_options(${PROJECT_NAME} PRIVATE
 	 $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:/LTCG>
 	 $<$<CXX_COMPILER_ID:GNU>:-municode>
@@ -38,6 +42,7 @@ target_link_options(${PROJECT_NAME} PRIVATE
 	 $<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-flto>
 )
 
+#Custom build command for HLSL shader
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso
 	COMMAND fxc /T cs_5_0 /E main /Fo ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl

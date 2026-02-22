@@ -1,6 +1,6 @@
-#include "../Public/Application.h"
-#include "../Public/SoftwareRenderer.h"
-#include "../Public/HardwareRenderer.h"
+#include "Public/Application.h"
+#include "Public/SoftwareRenderer.h"
+#include "Public/HardwareRenderer.h"
 #include "../../Resources/resource.h"
 #include <string.h>
 #include <array>
@@ -16,7 +16,7 @@
 
 
 
-Application::Application() : m_WindowHandle(NULL), m_WindowClass(NULL), m_SettingsWindowHandle(NULL), m_StartButtonHandle(NULL), m_RenderTimeLabel(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr)
+Application::Application() : m_WindowClass(WNDCLASS{}), m_WindowHandle(NULL), m_SettingsWindowHandle(NULL), m_StartButtonHandle(NULL), m_RenderTimeLabel(NULL), m_SoftwareRenderer(nullptr), m_HardwareRenderer(nullptr)
 {
 	//Initialize the vectors so we can easily retreive the values using the indices we get back from the combo boxes
 	m_Resolutions = { {640, 480}, {800, 600}, {1024, 768}, {1280, 720}, {1920, 1080}, {2560, 1440} };
@@ -236,6 +236,7 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 				}
 				return 0;
 			}
+			break;
 		}
 		case WM_PAINT:
 		{
@@ -456,7 +457,7 @@ void Application::GetCPUName()
 	char CPUBrandString[64];
 	memset(CPUBrandString, 0, sizeof(CPUBrandString));
 	//If numexid is avaliable upto 0x80000004
-	if (NumExtendedIDs >= 0x80000004)
+	if ((unsigned int)NumExtendedIDs >= 0x80000004)
 	{
 		memcpy(CPUBrandString, &ExtendedCPUIDInfo[2][0], sizeof(CPUIDInfo));
 		memcpy(CPUBrandString + 16, &ExtendedCPUIDInfo[3][0], sizeof(CPUIDInfo));
@@ -472,7 +473,7 @@ void Application::GetCPUName()
 	}
 	//Store the CPU name in the m_CPUName member variable, which is used for display in the settings dialog box
 	//Do remember to trim the extra white spaces that come with the CPU brand string, otherwise the display will look weird
-	size_t i = strlen(CPUBrandString) - 1;
+	int i = strlen(CPUBrandString) - 1;
 	while (CPUBrandString[i] == ' ' && i >= 0)
 	{
 		CPUBrandString[i] = '\0';

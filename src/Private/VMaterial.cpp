@@ -1,5 +1,5 @@
-#include "../Public/VMaterial.h"
-#include "../Public/HittableList.h"
+#include "Public/VMaterial.h"
+#include "Public/HittableList.h"
 
 bool VMaterial::DispatchScatter(const Ray& R, const HitRecord& InHitRecord, Color& OutAttenuation, Ray& OutScattered, const MaterialScatterData& Data, MaterialType Type)
 {

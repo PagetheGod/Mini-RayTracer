@@ -1,5 +1,5 @@
-#include "../Public/Color.h"
-#include "../Public/Interval.h"
+#include "Public/Color.h"
+#include "Public/Interval.h"
 
 //This function is kind of outdated, keeping it here so the RenderToPPM function does not break
 void WriteColor(std::ostream& OutFileStream, const Color& PixelColor)

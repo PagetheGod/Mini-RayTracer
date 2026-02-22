@@ -1,11 +1,11 @@
-#include "../Public/HittableList.h"
-#include "../Public/Material.h"
-#include "../Public/VMaterial.h"
-#include "../Public/ComputeShaderManager.h"
+#include "Public/HittableList.h"
+#include "Public/Material.h"
+#include "Public/VMaterial.h"
+#include "Public/ComputeShaderManager.h"
 
 
-HittableList::HittableList() : m_SphereTransforms(SphereTransformComponent{}), m_VSphereMatComponent(VSphereMatComponent{}), m_CSTransformBuffer(nullptr),
-m_CSMaterialBuffer(nullptr)
+HittableList::HittableList() : m_SphereTransforms(SphereTransformComponent{}), m_CSTransformBuffer(nullptr),
+m_CSMaterialBuffer(nullptr), m_VSphereMatComponent(VSphereMatComponent{})
 {
 
 }

@@ -29,7 +29,7 @@ struct SphereTransformData
 struct MaterialScatterData
 {
 	float FuzzOrRI = 0.f;
-	Color Albedo = (0.f, 0.f, 0.f);
+	Color Albedo = Color(0.f, 0.f, 0.f);
 };
 
 struct SphereTransformComponent
@@ -65,7 +65,6 @@ struct SphereObjectData
 {
 	Vector3D Center;
 	float Radius;
-	std::shared_ptr<Material> Material;
 };
 
 class HittableList : public Hittable

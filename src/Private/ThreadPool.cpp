@@ -1,4 +1,4 @@
-#include "../Public/ThreadPool.h"
+#include "Public/ThreadPool.h"
 
 VThreadPool::VThreadPool(size_t NumThreads, bool IsUsingCustomThreadCount)
 {

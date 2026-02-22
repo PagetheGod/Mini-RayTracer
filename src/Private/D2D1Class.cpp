@@ -1,4 +1,4 @@
-#include "../Public/D2D1Class.h"
+#include "Public/D2D1Class.h"
 
 D2D1Class::D2D1Class() : m_Factory(nullptr), m_RenderTarget(nullptr), m_Bitmap(nullptr), m_hWnd(NULL)
 {

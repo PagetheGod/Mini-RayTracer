@@ -1,8 +1,8 @@
-#include "../Public/SoftwareRenderer.h"
-#include "../Public/D2D1Class.h"
-#include "../Public/Timer.h"
-#include "../Public/VMaterial.h"
-#include "../Public/SubMaterials.h"
+#include "Public/SoftwareRenderer.h"
+#include "Public/D2D1Class.h"
+#include "Public/Timer.h"
+#include "Public/VMaterial.h"
+#include "Public/SubMaterials.h"
 #include <format>
 
 SoftwareRenderer::SoftwareRenderer(unsigned int Width, unsigned int Height, float AspectRatio) : m_Width(Width), m_Height(Height), m_AspectRatio(AspectRatio),

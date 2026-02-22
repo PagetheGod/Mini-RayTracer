@@ -1,4 +1,4 @@
-#include "../Public/SubMaterials.h"
+#include "Public/SubMaterials.h"
 
 bool Lambertian::Scatter(const Ray& R, const HitRecord& InHitRecord, Color& OutAttenuation, Ray& OutScattered)
 {

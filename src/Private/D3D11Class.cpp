@@ -1,8 +1,8 @@
-#include "../Public/D3D11Class.h"
+#include "Public/D3D11Class.h"
 #include <vector>
 
 D3D11Class::D3D11Class(HWND Hwnd, unsigned int Width, unsigned int Height) : m_Device(nullptr), m_DeviceContext(nullptr), m_SwapChain(nullptr), m_BackBuffer(nullptr)
-, m_RasterState(nullptr), m_Hwnd(Hwnd), m_Width(Width), m_Height(Height), m_RTV(nullptr)
+, m_RasterState(nullptr), m_RTV(nullptr), m_Hwnd(Hwnd), m_Width(Width), m_Height(Height)
 {
 	
 
