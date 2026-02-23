@@ -8,10 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(${PROJECT_NAME} WIN32)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/Binaries/Output/Debug
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/Binaries/Output/Release
-)
 
 #Unicode def for MSVC(wWinMain)
 target_compile_definitions(${PROJECT_NAME} PRIVATE UNICODE _UNICODE)
@@ -28,18 +24,20 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 	$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:/W1 /O2 /Oi /GL>
 	#GCC
 	$<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Debug>>:-Wall -Wextra -O0>
-	$<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Release>>:-w -O3 -flto>
+	$<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Release>>:-w -O3 -flto=auto>
 	#Clang
 	$<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Debug>>:-Wall -Wextra -O0>
-	$<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-w -O3>
+	$<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-w -O3 -flto=auto>
 )
 
 #Enables linked time optimizations for all compilers
 target_link_options(${PROJECT_NAME} PRIVATE
 	 $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:/LTCG>
+	 #Enable Unicode for GCC so it can find wWinMain
 	 $<$<CXX_COMPILER_ID:GNU>:-municode>
- 	 $<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Release>>:-flto>
-	 $<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-flto>
+	 $<$<CXX_COMPILER_ID:Clang>:-municode -static>	
+ 	 $<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Release>>:-flto=auto>
+	 $<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-flto=auto>
 )
 
 #Custom build command for HLSL shader
@@ -48,6 +46,18 @@ add_custom_command(
 	COMMAND fxc /T cs_5_0 /E main /Fo ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl
 	COMMENT "Compiling HLSL compute shader"
+)
+
+#Copy the compiled shader .cso next to the executable
+
+#Create the post build command targeting our project
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+	#Invoke CMake command line, -E for portability, make a directory next to the exe for compiled shaders
+	COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${PROJECT_NAME}>/Shaders
+	#Only copy the shader file if it's different
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso
+		$<TARGET_FILE_DIR:${PROJECT_NAME}>/Shaders/RayTraceShader.cso
 )
 
 target_sources(${PROJECT_NAME} 
@@ -71,9 +81,8 @@ target_sources(${PROJECT_NAME}
 	src/Private/Timer.cpp
 	src/Private/Vector3D.cpp
 	src/Private/VMaterial.cpp
-
-	Shaders/RayTraceShader.cso
 	
+	Shaders/RayTraceShader.cso
 	Resources/Settings.rc
 	Resources/app.manifest
 )

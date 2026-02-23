@@ -1,6 +1,7 @@
 #Binaries
 Binaries/
 Output/
+build*/
 #Visual studio
 *.sln
 *.vcxproj
@@ -9,4 +10,5 @@ Output/
 #ppm Output
 *.ppm
 #compiled shaders
+/Shaders/
 *.cso

@@ -18,6 +18,9 @@
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
+#ifdef __GNUC__
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "app.manifest"
+#endif
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -43,6 +46,7 @@ BEGIN
 END
 
 #endif    // APSTUDIO_INVOKED
+
 
 
 /////////////////////////////////////////////////////////////////////////////

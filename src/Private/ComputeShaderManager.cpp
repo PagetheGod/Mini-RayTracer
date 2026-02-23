@@ -1,5 +1,6 @@
 #include "Public/ComputeShaderManager.h"
 #include "Public/Camera.h"
+#include <string>
 
 ComputeShaderManager::ComputeShaderManager(ID3D11Device* Device, ID3D11DeviceContext* DeviceContext, unsigned int ScreenWidth, unsigned int ScreenHeight) : m_Device(Device), m_DeviceContext(DeviceContext),
 m_CSConstantBuffer(nullptr), m_SampleOffsetBuffer(nullptr), m_SphereTransformBuffer(nullptr), m_SphereMaterialBuffer(nullptr), m_ComputeOutputBuffer(nullptr), m_TransformSRV(nullptr), m_MaterialSRV(nullptr),
@@ -16,7 +17,19 @@ bool ComputeShaderManager::InitializeShaders(unsigned int ObjectCount, unsigned 
 	m_MaxDepth = Depth;
 	m_SampleCount = SampleCount;
 	m_ObjectCount = ObjectCount;
-	Result = D3DReadFileToBlob(L"../../../Shaders/RayTraceShader.cso", &ShaderBlob);
+	//Get the .exe path so we know where to load the shader
+	//Tbh just /Shaders/[Shader .cso file name] should work for a project this tiny so this is overkill
+	
+	wchar_t ExecutablePath[256];
+	//Gets the full path of current executable, NULL means current process
+	GetModuleFileName(NULL, ExecutablePath, 256);
+	std::wstring ExecutableDirectory(ExecutablePath);
+	//find_last_of finds the last separator and makes a substring up until that char, this gives us the absolute path to the exe
+	ExecutableDirectory = ExecutableDirectory.substr(0, ExecutableDirectory.find_last_of(L"\\/") + 1);
+	//Final full path to the shader file
+	std::wstring ShaderPath = ExecutableDirectory + L"Shaders/RayTraceShader.cso";
+
+	Result = D3DReadFileToBlob(ShaderPath.c_str(), &ShaderBlob);
 	if (FAILED(Result))
 	{
 		wchar_t ErrorMessage[128];
