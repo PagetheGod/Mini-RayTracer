@@ -94,6 +94,13 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow)
 		return false;
 	}
 
+	//Use the actual client rect dimensions instead of the dialog values
+	//AdjustWindowRectEx can produce a slightly different client area than expected on some systems
+	RECT ClientRC;
+	GetClientRect(m_WindowHandle, &ClientRC);
+	m_Width = ClientRC.right;
+	m_Height = ClientRC.bottom;
+
 	if (m_RendererType == RenderType::Software)
 	{
 		m_SoftwareRenderer = std::make_unique<SoftwareRenderer>(m_Width, m_Height, AspectRatio);
