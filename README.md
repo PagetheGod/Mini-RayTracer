@@ -12,11 +12,11 @@ However, this project does differ from the original implementations in multiple 
 ## What's Different?
 
 - **Render Target**
-  - Renders to a GUI window insted of a ppm image. This change was made because of personal preferences and my desire to practice using the WIN32 API.
+  - Renders to a GUI window instead of a ppm image. This change was made because of personal preferences and my desire to practice using the WIN32 API.
 - **Render Logic**
   - Uses multi-threaded rendering over the single-threaded rendering presented in the book's codes. This is done for performance, and to practice multi-threaded programming.
-- **Code Structure** 
-  - Removed the circular dependencies that are introduced by the book's codes.
+- **Build System** 
+  - Uses CMake and a .bat script file to build the project across GCC, Clang, and MSVC.
 ---
 
 ## Features Implemented
@@ -45,14 +45,10 @@ However, this project does differ from the original implementations in multiple 
 - Multithreading and thread synchronization.
 - Performance optimization
 - Integrating rendering logic with OS GUI APIs
+- Basic usage of the CMake build system
 
 ---
 
 ## Project Status
 
-This project is still ongoing and primarily intended as a learning and experimentation platform.
-
-Planned future work includes:
-- Further refactoring and cleanup of rendering architecture.
-- Using CMake so the project build process can decouple from Visual Studio.
-- Potentially moving to modern APIs such as Vulkan and DX12.
+This project is mostly finished. I will come back to it from time to time for minor improvements.
