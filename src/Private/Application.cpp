@@ -70,11 +70,12 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow)
 	int ActualHeight = RC.bottom - RC.top;
 
 	//CreateWindowEx returns 0/NULL on failure
+	//Disables resizing
 	m_WindowHandle = CreateWindowEx(
 		0,
 		WindowClassName,
 		L"Ray Tracing in One Weekend",
-		WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+		WS_OVERLAPPEDWINDOW &~WS_THICKFRAME &~WS_MAXIMIZEBOX | WS_CLIPCHILDREN,
 		PosX,
 		PosY,
 		ActualWidth, ActualHeight,
@@ -122,7 +123,7 @@ void Application::Run()
 {
 	MSG Msg{};
 
-	while (GetMessage(&Msg, m_WindowHandle, 0, 0) > 0)
+	while (GetMessage(&Msg, NULL, 0, 0) > 0)
 	{
 		TranslateMessage(&Msg);
 		DispatchMessageW(&Msg);
@@ -212,6 +213,13 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		}
 		case WM_COMMAND:
 		{
+			/*
+			* This part is NOT IDEAL for performance
+			* As it stands, we run the ENTIRE rendering process inside WM_COMMAND message
+			* This blocks all other message handling and causes message to pile up in the message queue
+			* Which means if we click around, or do any other thing that sends a message to the application, it gets stuck
+			* And Windows will mark it as not-responding and kills it
+			*/
 			if ((HWND)lParam == m_StartButtonHandle && (HIWORD(wParam) == BN_CLICKED))
 			{
 				//Destory the start render button so we don't click it multiple times

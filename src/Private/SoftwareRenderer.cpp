@@ -134,6 +134,23 @@ void SoftwareRenderer::RenderFrameBuffer()
 		RECT UpdateRegion{ 0, Scanline, (long)m_Width, Scanline + 1};
 		InvalidateRect(m_hWnd, &UpdateRegion, false);
 		UpdateWindow(m_hWnd);
+
+		/* Process pending messages to keep the app responsive while we are rendering
+		* This is a HACK fix. Proper fix will be to move the render loop outside of WM_COMMAND
+		* Note the difference between PeekMessage with PM_REMOVE and GetMessage()
+		* PeekMessage DOES NOT block like GetMessage do, if it does not find a message, it returns false and the loop ends
+		*/
+		MSG Msg;
+		while (PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (Msg.message == WM_QUIT)
+			{
+				PostQuitMessage((int)Msg.wParam);
+				return;
+			}
+			TranslateMessage(&Msg);
+			DispatchMessage(&Msg);
+		}
 	}
 
 	RenderTimer.Stop();
