@@ -84,7 +84,7 @@ uint PCGHash(uint Seed)
 }
 
 
-//According to claude, FNV1a is not good in this context as it can produce lots of noises(stripes and patterns due to low quality)
+//According to some sources, FNV1a is not good in this context as it can produce lots of noises(stripes and patterns due to low quality)
 //But I tried it out using like <= 5 samples(and higher samples) and it looks pretty much the same as PCG
 uint FNV1AHash(uint Seed)
 {
@@ -101,10 +101,18 @@ void InitRandomState(inout RandomState State, uint2 PixelXY, uint SampleIndex, u
     State.Seed = PixelXY.x + PixelXY.y * Width + SampleIndex * Width * Height;
 }
 
+//This is probably redundant right now
 float RandomFloat(inout RandomState State)
 {
     State.Seed = PCGHash(State.Seed);
     return (State.Seed / 4294967295.0) * 2.f - 1.f; //Map to [-1, 1]
+}
+
+//Generate a random float in [0, 1], needed for probability checks like Schlick's reflectance
+float RandomFloat01(inout RandomState State)
+{
+    State.Seed = PCGHash(State.Seed);
+    return State.Seed / 4294967295.0; //Map to [0, 1]
 }
 
 //Helper to generate a float within an interval
@@ -195,6 +203,17 @@ bool HitWorld(const Ray R, float Min, float Max, inout HitRecord OutHitRecord, i
 }
 
 
+//Schlick's approximation for Fresnel reflectance
+//At grazing angles, all surfaces become more reflective (think of a lake - looking straight down you see through, looking across you see reflections)
+//R0 is the reflectance at normal incidence (looking straight at the surface), derived from the relative refractive index
+//The (1 - cosine)^5 term ramps up reflectance as the viewing angle becomes more grazing
+float SchlickReflectance(float Cosine, float RelativeRI)
+{
+    float R0 = (1.f - RelativeRI) / (1.f + RelativeRI);
+    R0 = R0 * R0;
+    return R0 + (1.f - R0) * pow(1.f - Cosine, 5.f);
+}
+
 bool LambertianScatter(const Ray R, inout float4 OutAttenuation, const HitRecord InHitRecord, const MaterialScatterData InScatterData, inout Ray ScatteredRay, inout RandomState RandState)
 {
     float3 ScatterDirection = InHitRecord.Normal + RandomUnitVector(RandState);
@@ -223,18 +242,22 @@ bool MetalicScatter(const Ray R, inout float4 OutAttenuation, const HitRecord In
 bool DielectricScatter(const Ray R, inout float4 OutAttenuation, const HitRecord InHitRecord, const MaterialScatterData InScatterData, inout Ray ScatteredRay, inout RandomState RandState)
 {
     OutAttenuation = float4(1.f, 1.f, 1.f, 1.f);
-    
+
     const float3 UnitDirection = normalize(R.Direction);
-    
+
     float RelativeRI = InHitRecord.IsFrontFace ? (1.f / InScatterData.FuzzOrRI) : InScatterData.FuzzOrRI;
-    
+
     float CosTheta = min(dot(-UnitDirection, InHitRecord.Normal), 1.f);
     float SinTheta = sqrt(1.f - CosTheta * CosTheta);
-    
+
+    //Check if refraction is physically possible (Snell's Law has a solution)
     bool CanRefract = RelativeRI * SinTheta <= 1.f;
     float3 Direction;
-    
-    if (CanRefract)
+
+    //Even when refraction is possible, use Schlick's approximation to randomly choose between refraction and reflection
+    //This prevents rays from getting trapped inside glass spheres by always refracting
+    //Without this, rays bounce internally until they exhaust the max depth and return black, black pixels, very ugly :(
+    if (CanRefract && SchlickReflectance(CosTheta, RelativeRI) <= RandomFloat01(RandState))
     {
         Direction = refract(UnitDirection, InHitRecord.Normal, RelativeRI);
     }

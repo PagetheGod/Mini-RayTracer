@@ -82,7 +82,7 @@ Color Camera::PerformPathTrace(const Ray& R, HittableList& World) const
 		else
 		{
 			Vector3D UnitDirection = CurrentRay.Direction().Normalize();
-			float t = 0.5f * (UnitDirection.X + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
+			float t = 0.5f * (UnitDirection.Y + 1.f);//We are working with a unit vector with X in [-1,1] so we have to map X from [-1,1] to [0,1] first
 			PixelColor += ((1.f - t) * Color(0.9f, 0.9f, 0.9f) + t * Color(0.5f, 0.7f, 1.f));
 			return TotalAttenuation * PixelColor;
 		}
