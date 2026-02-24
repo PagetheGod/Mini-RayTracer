@@ -29,6 +29,7 @@ bool D3D11Class::InitializeD3D11()
 	Result = DXGIFactory->EnumAdapters(0, &DXGIAdapter);
 	if (FAILED(Result))
 	{
+		DXGIFactory->Release();
 		wchar_t ErrorMessage[128];
 		wsprintf(ErrorMessage, L"Failed to create D3D11 Adapter! Error code: %04X", Result);
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
@@ -37,6 +38,8 @@ bool D3D11Class::InitializeD3D11()
 	Result = DXGIAdapter->EnumOutputs(0, &DXGIAdapterOutput);
 	if (FAILED(Result))
 	{
+		DXGIFactory->Release();
+		DXGIAdapter->Release();
 		wchar_t ErrorMessage[128];
 		wsprintf(ErrorMessage, L"Failed to create D3D11 Output! Error code: %04X", Result);
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
@@ -47,6 +50,9 @@ bool D3D11Class::InitializeD3D11()
 	Result = DXGIAdapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &NumModes, NULL);
 	if (FAILED(Result))
 	{
+		DXGIFactory->Release();
+		DXGIAdapter->Release();
+		DXGIAdapterOutput->Release();
 		wchar_t ErrorMessage[128];
 		wsprintf(ErrorMessage, L"Failed to get D3D11 display mode number! Error code: %04X", Result);
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
@@ -58,6 +64,9 @@ bool D3D11Class::InitializeD3D11()
 	Result = DXGIAdapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &NumModes, DisplayModes.data());
 	if (FAILED(Result))
 	{
+		DXGIFactory->Release();
+		DXGIAdapter->Release();
+		DXGIAdapterOutput->Release();
 		wchar_t ErrorMessage[128];
 		wsprintf(ErrorMessage, L"Failed to get D3D11 display mode list! Error code: %04X", Result);
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
@@ -82,6 +91,9 @@ bool D3D11Class::InitializeD3D11()
 	Result = DXGIAdapter->GetDesc(&AdapterDesc);
 	if (FAILED(Result))
 	{
+		DXGIFactory->Release();
+		DXGIAdapter->Release();
+		DXGIAdapterOutput->Release();
 		wchar_t ErrorMessage[128];
 		wsprintf(ErrorMessage, L"Failed to get D3D11 adapter description! Error code: %04X", Result);
 		MessageBox(NULL, ErrorMessage, L"Error", MB_OK);
@@ -101,7 +113,7 @@ bool D3D11Class::InitializeD3D11()
 
 	DXGI_SWAP_CHAIN_DESC SwapChainDesc;
 	ZeroMemory(&SwapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC));
-	SwapChainDesc.BufferCount = 1;
+	SwapChainDesc.BufferCount = 2;
 	SwapChainDesc.BufferDesc.Width = m_Width;
 	SwapChainDesc.BufferDesc.Height = m_Height;
 	SwapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -123,7 +135,6 @@ bool D3D11Class::InitializeD3D11()
 	SwapChainDesc.SampleDesc.Count = 1;
 	SwapChainDesc.SampleDesc.Quality = 0;
 	SwapChainDesc.Flags = 0;
-	SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	
 
 

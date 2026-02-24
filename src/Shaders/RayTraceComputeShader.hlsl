@@ -334,6 +334,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
     
     PixelColor *= SampleScaleFactor;
     PixelColor = saturate(PixelColor);
+    PixelColor = sqrt(PixelColor);
     OutputBuffer[DTid.xy] = PixelColor;
 }
 

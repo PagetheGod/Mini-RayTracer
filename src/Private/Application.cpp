@@ -64,7 +64,7 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow)
 
 	//Adjust the actual window client size to our assumed pixel counts - we do this because the actual client size is assumed size - paddings + borders and stuffs
 	RECT RC = RECT(0, 0, m_Width, m_Height);
-	AdjustWindowRectEx(&RC, WS_OVERLAPPEDWINDOW, false, 0);
+	AdjustWindowRectEx(&RC, WS_OVERLAPPEDWINDOW & (~WS_THICKFRAME) & (~WS_MAXIMIZEBOX) | WS_CLIPCHILDREN, false, 0);
 
 	int ActualWidth = RC.right - RC.left;
 	int ActualHeight = RC.bottom - RC.top;
@@ -75,7 +75,7 @@ bool Application::Initialize(HINSTANCE InhInstance, int InpCmdShow)
 		0,
 		WindowClassName,
 		L"Ray Tracing in One Weekend",
-		WS_OVERLAPPEDWINDOW &~WS_THICKFRAME &~WS_MAXIMIZEBOX | WS_CLIPCHILDREN,
+		WS_OVERLAPPEDWINDOW &(~WS_THICKFRAME) &(~WS_MAXIMIZEBOX) | WS_CLIPCHILDREN,
 		PosX,
 		PosY,
 		ActualWidth, ActualHeight,
@@ -230,8 +230,8 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 			if ((HWND)lParam == m_StartButtonHandle && (HIWORD(wParam) == BN_CLICKED))
 			{
 				//Destory the start render button so we don't click it multiple times
-				DestroyWindow(m_StartButtonHandle);
 				ShowWindow(m_StartButtonHandle, SW_HIDE);
+				DestroyWindow(m_StartButtonHandle);
 				m_StartButtonHandle = NULL;
 				if (m_RendererType == RenderType::Software)
 				{
@@ -255,28 +255,36 @@ LRESULT Application::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 		}
 		case WM_PAINT:
 		{
-			if (m_IsFirstPaint)
+			if (m_RendererType == RenderType::Software)
 			{
-				if (m_RendererType == RenderType::Software)
+				//BeginPaint/EndPaint is called inside D2D1Class, which validates the paint region
+				if (m_IsFirstPaint)
 				{
 					m_SoftwareRenderer->ClearWindow();
+					m_IsFirstPaint = false;
+					UpdateWindow(m_StartButtonHandle);
+					UpdateWindow(m_RenderTimeLabel);
 				}
 				else
 				{
-					m_HardwareRenderer->ClearBackground();
+					m_SoftwareRenderer->RenderToWindow();
 				}
-				m_IsFirstPaint = false;
-				//Update the button and render time static text after we clear the background so they display normally
-				UpdateWindow(m_StartButtonHandle);
-				UpdateWindow(m_RenderTimeLabel);
 			}
 			else
 			{
-				if (m_RendererType == RenderType::Software)
+				//D3D11 manages its own presentation through the swap chain
+				//But we still need BeginPaint/EndPaint to validate the paint region
+				//Otherwise Windows keeps sending WM_PAINT in a tight loop, wasting CPU
+				PAINTSTRUCT PS;
+				BeginPaint(hWnd, &PS);
+				if (m_IsFirstPaint)
 				{
-					m_SoftwareRenderer->RenderToWindow();
+					m_HardwareRenderer->ClearBackground();
+					m_IsFirstPaint = false;
+					UpdateWindow(m_StartButtonHandle);
+					UpdateWindow(m_RenderTimeLabel);
 				}
-				
+				EndPaint(hWnd, &PS);
 			}
 			return 0;
 		}
@@ -408,11 +416,11 @@ long long Application::HandleSettingsDialogMessage(HWND hDlg, UINT uMsg, WPARAM 
 					size_t SampleCountIndex = SendMessageW(GetDlgItem(hDlg, IDC_COMBO_SAMPLE), CB_GETCURSEL, 0, 0);
 					size_t MaxDepthIndex = SendMessageW(GetDlgItem(hDlg, IDC_COMBO_DEPTH), CB_GETCURSEL, 0, 0);
 					
-					m_Width = m_Resolutions[ResolutionIndex].first;
-					m_Height = m_Resolutions[ResolutionIndex].second;
-					m_RendererType = RenderType(RenderTypeIndex);
-					m_SampleCount = m_SampleCounts[SampleCountIndex];
-					m_MaxDepth = m_MaxDepths[MaxDepthIndex];
+					m_Width = m_Resolutions[ResolutionIndex >= 0 ? ResolutionIndex : 0].first;
+					m_Height = m_Resolutions[ResolutionIndex >= 0 ? ResolutionIndex : 0].second;
+					m_RendererType = RenderType(RenderTypeIndex >= 0 ? RenderTypeIndex : 0);
+					m_SampleCount = m_SampleCounts[SampleCountIndex >= 0 ? SampleCountIndex : 0];
+					m_MaxDepth = m_MaxDepths[MaxDepthIndex >= 0 ? MaxDepthIndex : 0];
 					EndDialog(hDlg, TRUE);
 					return TRUE;
 				}
@@ -489,7 +497,7 @@ void Application::GetCPUName()
 	//Store the CPU name in the m_CPUName member variable, which is used for display in the settings dialog box
 	//Do remember to trim the extra white spaces that come with the CPU brand string, otherwise the display will look weird
 	int i = strlen(CPUBrandString) - 1;
-	while (CPUBrandString[i] == ' ' && i >= 0)
+	while (i >= 0 && CPUBrandString[i] == ' ')
 	{
 		CPUBrandString[i] = '\0';
 		i--;

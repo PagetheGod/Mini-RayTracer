@@ -275,7 +275,9 @@ void ComputeShaderManager::DispatchShader()
 		m_DeviceContext->Begin(m_DisjointQuery);
 		m_DeviceContext->End(m_CSBeginQuery);
 	}
-	m_DeviceContext->Dispatch(m_Width / 8, m_Height / 8, 1);
+	//ceil(a / b) = (a + b - 1) / b
+	//This pushes the integer division to the next multiple so we don't truncate in case the pixel number isn't multiple of 8
+	m_DeviceContext->Dispatch((m_Width + 7 ) / 8, (m_Height + 7) / 8, 1);
 	if (m_ShouldTime)
 	{
 		m_DeviceContext->End(m_CSEndQuery);

@@ -110,14 +110,10 @@ void SoftwareRenderer::RenderFrameBuffer()
 				//The D2D1 class is expecting B8G8R8, so we convert the float color value to byte and fill every pixel in the buffer accordingly
 				size_t PixelIndex = (i * m_Width + j) * 4;
 					
-				//Apply gamma correction to color components and adjust them to between 0 and 255
-				unsigned char AdjustedRed = (unsigned char)LinearToGamma(PixelColor.R());
-				unsigned char AdjustedGreen = (unsigned char)LinearToGamma(PixelColor.G());
-				unsigned char AdjustedBlue = (unsigned char)LinearToGamma(PixelColor.B());
-
-				AdjustedRed = (unsigned char)(255.999f * PixelColor.R());
-				AdjustedGreen = (unsigned char)(255.999f * PixelColor.G());
-				AdjustedBlue =  (unsigned char)(255.999f * PixelColor.B());
+				//Apply gamma correction and scale to 0-255 in one step
+				unsigned char AdjustedRed = (unsigned char)(255.999f * LinearToGamma(PixelColor.R()));
+				unsigned char AdjustedGreen = (unsigned char)(255.999f * LinearToGamma(PixelColor.G()));
+				unsigned char AdjustedBlue = (unsigned char)(255.999f * LinearToGamma(PixelColor.B()));
 
 				m_FrameBuffer[PixelIndex] = AdjustedBlue;
 				m_FrameBuffer[PixelIndex + 1] = AdjustedGreen;

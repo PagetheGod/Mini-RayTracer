@@ -32,7 +32,7 @@ float LinearToGamma(const float Component)
 {
 	if (Component > 0.f)
 	{
-		return 1 / std::sqrt(Component);
+		return std::sqrt(Component);
 	}
 	return 0.f;
 }

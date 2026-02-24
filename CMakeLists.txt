@@ -8,6 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(${PROJECT_NAME} WIN32)
 
+#Set our project as the startup project in Visual Studio instead of ALL_BUILD
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
 #Unicode def for MSVC(wWinMain)
 target_compile_definitions(${PROJECT_NAME} PRIVATE UNICODE _UNICODE)
@@ -40,10 +42,24 @@ target_link_options(${PROJECT_NAME} PRIVATE
 	 $<$<AND:$<CXX_COMPILER_ID:Clang>,$<CONFIG:Release>>:-flto=8>
 )
 
+#Find fxc in the Windows SDK - needed for GCC/Clang builds where the SDK isn't on PATH
+#Try environment variables first (set by VS Developer Command Prompt), then fall back to default install path
+set(FXC_HINTS "")
+if(DEFINED ENV{WindowsSdkDir} AND DEFINED ENV{WindowsSDKVersion})
+	list(APPEND FXC_HINTS "$ENV{WindowsSdkDir}/bin/$ENV{WindowsSDKVersion}/x64")
+endif()
+file(GLOB FXC_DEFAULT_PATHS "C:/Program Files (x86)/Windows Kits/10/bin/*/x64")
+list(APPEND FXC_HINTS ${FXC_DEFAULT_PATHS})
+
+find_program(FXC_EXECUTABLE fxc HINTS ${FXC_HINTS})
+if(NOT FXC_EXECUTABLE)
+	message(FATAL_ERROR "fxc not found! Make sure the Windows SDK is installed.")
+endif()
+
 #Custom build command for HLSL shader
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso
-	COMMAND fxc /T cs_5_0 /E main /Fo ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl
+	COMMAND ${FXC_EXECUTABLE} /T cs_5_0 /E main /Fo ${CMAKE_CURRENT_SOURCE_DIR}/Shaders/RayTraceShader.cso ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/Shaders/RayTraceComputeShader.hlsl
 	COMMENT "Compiling HLSL compute shader"
 )

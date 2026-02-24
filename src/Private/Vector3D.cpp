@@ -30,7 +30,7 @@ Vector3D& Vector3D::operator*=(const float Scalar)
 
 Vector3D& Vector3D::operator/=(const float Scalar)
 {
-	if (Scalar > 0.0001f)
+	if (std::abs(Scalar) > 0.0001f)
 	{
 		return *this *= (1.f / Scalar);
 	}
