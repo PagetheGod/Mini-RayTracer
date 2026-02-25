@@ -27,6 +27,10 @@ Shout out to Dr.Shirley for putting the wonderful series online for free. And go
   * Uses multi-threaded rendering over the single-threaded rendering presented in the book's codes. This is done for performance, and to practice multi-threaded programming. The multi-threading was achieved using this thread pool implementation: https://github.com/progschj/ThreadPool/blob/master/ThreadPool.h. Credit goes to the author.
 
 
+* **Render Timer**
+
+  * Displays render time usage through a static text component. Timing is done using std::chrono in software renderer and D3D11 Query in hardware renderer. 
+
 
 * **Build System**
 
