@@ -74,13 +74,13 @@ Shout out to Dr. Shirley for putting the wonderful series online for free. And g
 
 
 
-* **Software Renderer Image**
+* **Software Renderer Image (with depth of field)**
 
 ![Ray trace result produced by the software renderer](Screenshots/CPURender.png)
 
 
 
-* **Hardware Renderer Image**
+* **Hardware Renderer Image (no depth of field)**
 
 ![Ray trace result produced by the hardware renderer](Screenshots/GPURender.png)
 
