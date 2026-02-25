@@ -2,11 +2,11 @@
 
 
 
-Hello there to whoever stumble upon this little toy of mine (it really is just a toy, considering it just outputs a single frame of the same scene forever).
+Hello there to whoever stumbles upon this little toy of mine (it really is just a toy, considering it just outputs a single frame of the same scene forever).
 
-This is a mini ray tracer based on Dr.Peter Shirley's Ray Tracing series: https://raytracing.github.io/books/RayTracingInOneWeekend.html. The math and physics are taken from the book, at least. The rest I did myself, more on that later.
+This is a mini ray tracer based on Dr. Peter Shirley's Ray Tracing series: https://raytracing.github.io/books/RayTracingInOneWeekend.html. The math and physics are taken from the book, at least. The rest I did myself, more on that later.
 
-Shout out to Dr.Shirley for putting the wonderful series online for free. And go check it out they  are really useful!
+Shout out to Dr. Shirley for putting the wonderful series online for free. And go check it out they are really useful!
 
 
 
@@ -37,7 +37,7 @@ Shout out to Dr.Shirley for putting the wonderful series online for free. And go
 
 ---
 
-## Well, what did I actually implemented?
+## Well, what did I actually implement?
 
 
 
@@ -66,7 +66,7 @@ Shout out to Dr.Shirley for putting the wonderful series online for free. And go
 
 
 
-## Project Status and rendering demo (basically just two screenshots, the obvious yellow tint you can probably see is not produced by the ray tracer, it comes from my aggressive Night Light settings):
+## Project Status and rendering demo (the obvious yellow tint you can probably see is not produced by the ray tracer, it comes from my aggressive Night Light settings):
 
 * **Ray Tracer Settings Window Screenshot**
 
@@ -101,7 +101,7 @@ Shout out to Dr.Shirley for putting the wonderful series online for free. And go
 * **Prerequisites**
 
   * Because of the use of DX11, Win32 and other parts of the Windows SDK, this project will only build on Windows.
-  * Make sure you have the Windows10 SDK, CMake (Version 4.2.3), GCC, and Clang installed. This project also requires C++20.
+  * Make sure you have the Windows 10 SDK and CMake (Version 4.2.3) installed. To build with GCC or Clang, ensure they are on your PATH. This project requires C++20.
 
 
 
